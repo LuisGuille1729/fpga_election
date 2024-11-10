@@ -77,9 +77,6 @@ def calculate_bezout_constants(N):
     
     constants = {"N": N, "k": k, "R": R, "P": P}   # (with all values positive)
     
-    # print(constants)
-    # print(constants["N"]*constants["k"])
-    # print(constants["R"]*constants["P"])
     return constants
 
 
@@ -132,8 +129,6 @@ def run_montgomery_mult(vals, constants):
         else:
            residue_vals.append(memo[val]) 
            
-    # print(residue_vals)
-
     # Calculate modular product using Montgomery Reduction
     running_residue = 1*R
     for residue_class in residue_vals:
@@ -206,12 +201,10 @@ def run_normal_multiplication(val, exp, N):
             T = running_product * squarer
             # _, running_product = non_restor_div(T, N) # equivalent to T % N
             running_product = T % N
-            # print(T, N, running_product)
         
         T2 = squarer * squarer
         # _, squarer = non_restor_div(T2, N) # equivalent to T2 % N
         squarer = T2 % N
-        # print(T2, N, squarer)
         
         exp = exp >> 1
 
