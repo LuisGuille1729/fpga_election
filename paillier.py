@@ -2,7 +2,7 @@ from phe import paillier
 import random
 import math
 import sys
-# if you haven't: pip install phe  
+# if you haven't: pip install phe (only used for key generation) 
 # https://python-paillier.readthedocs.io/en/stable/usage.html
 # https://python-paillier.readthedocs.io/en/stable/phe.html#module-phe.paillier
 
@@ -24,7 +24,14 @@ class Private_Key:
 
 
 def generate_keys(generate_new=False, verbose=True):
-
+    """
+    Returns Keys, you can access:
+                        Keys.public.n 
+                            .public.g
+                            .public.n_square
+                            .private.lambd
+                            .private.mu
+    """
     # Generate keys for paillier
     if generate_new:
         public_key, private_key = paillier.generate_paillier_keypair(n_length=2048)
@@ -36,7 +43,7 @@ def generate_keys(generate_new=False, verbose=True):
             print(f"p ({private_key.p.bit_length()}):  {private_key.p}")
             print(f"q ({private_key.q.bit_length()}):  {private_key.q}")
 
-        # using simpler implementation for (g, lambda, mu)
+        # using simpler implementation for (g, lambda, mu) (see paillier wikipedia article key generation)
         g = n + 1
         euler_totient = (p-1)*(q-1)         # replace lambda
         mu = pow(euler_totient, -1, n)
@@ -71,7 +78,6 @@ def generate_keys(generate_new=False, verbose=True):
 
 def encrypt(pub_key: Public_Key, plaintext: int):
     r = random.randint(1, pub_key.n)
-    # print(f"r ({r.bit_length()}):  {r}") 
 
     cipher = pow(pub_key.g, plaintext, pub_key.n_square) * pow(r, pub_key.n, pub_key.n_square) % pub_key.n_square
 
@@ -85,22 +91,34 @@ def decrypt(keys: Keys, ciphertext: int):
 
     return plaintext
 
+# Just some helper functions
 def ASCII_to_Int(message: str):
     return int.from_bytes(message.encode('utf-8'), byteorder='big', signed=False)
 
 def Int_to_ASCII(integer: int, bytes_count: int = 4):
     return integer.to_bytes(bytes_count).decode('utf-8')
 
+
+
+
 if __name__ == "__main__":
     keys = generate_keys(generate_new=False, verbose=True)
 
-    message = sys.argv[1]
-    plaintext_in = ASCII_to_Int(message)
-    
+    plaintext_in = 12345
     ciphertext = encrypt(keys.public, plaintext_in)
-    
     plaintext_out = decrypt(keys, ciphertext)
+    print(f"In: {plaintext_in},\nCiphertext: {ciphertext},\nDecode: {plaintext_out}")
 
-    print(Int_to_ASCII(plaintext_out, bytes_count=len(message)))
+    # for example: 
+    # python paillier.py "Hello Paillier"
+    if len(sys.argv) > 1:
+        message = sys.argv[1]
+        plaintext_in = ASCII_to_Int(message)
+        
+        ciphertext = encrypt(keys.public, plaintext_in)
+        
+        plaintext_out = decrypt(keys, ciphertext)
+
+        print(Int_to_ASCII(plaintext_out, bytes_count=len(message)))
     
     
