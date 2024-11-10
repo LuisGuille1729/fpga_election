@@ -7,8 +7,13 @@ def bit_pos_check(num,bit_count):
     return extract_outer_bit(num,bit_count-1) ==0;
 
 def non_restor_div(Q,M):
+
+    if (Q < M):
+        return (0, Q)
+    
     # initialization
-    num_bits = int(np.floor(np.log2(Q)) +1)
+    # num_bits = int(np.floor(np.log2(Q)) +1)
+    num_bits = Q.bit_length()
     A_limit = num_bits+1
     Q_limit = num_bits
     acumulator = 0
