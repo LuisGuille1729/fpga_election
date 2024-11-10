@@ -58,7 +58,7 @@ for i in range(divisor, divisor*10):
         print(i)
 
 
-
-Q,R = non_restor_div(129382984392840,365736)
-print(Q)
-print(R)
+if __name__ == "__main__":
+    Q,R = non_restor_div(129382984392840,365736)
+    print(Q)
+    print(R)
