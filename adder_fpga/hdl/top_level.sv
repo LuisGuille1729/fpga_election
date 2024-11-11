@@ -105,8 +105,8 @@ module top_level
   )
 
 
-  // MEMORY ARBITRAR 
-  // probably implement a full arbitrar module instead of having it all in top level
+  // MEMORY ARBITER 
+  // probably implement a full arbiter module instead of having it all in top level
   always_ff @( posedge clk_100mhz ) begin
     
     // Missing because I got too tired
