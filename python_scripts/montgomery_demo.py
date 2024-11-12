@@ -84,6 +84,7 @@ def calculate_bezout_constants(N: int):
 def Redc(T: int, constants: dict):
     """ Montgomery Reduction.
     Calculates TP where P is the inverse of R mod N
+    Assumes that T < RN
     
     Args:
         T: Integer, usually expected to be in Montgomery form
@@ -163,6 +164,7 @@ def run_montgomery_mult_precomputed(vals_mont_form: list[int], constants: dict):
         running_residue = Redc(T, constants)
         
     return Redc(running_residue, constants)
+
         
 @timer
 def run_montgomery_exponentiation(val: int, exp: int, constants: dict):
@@ -191,7 +193,34 @@ def run_montgomery_exponentiation(val: int, exp: int, constants: dict):
         exp = exp >> 1
 
     return Redc(running_residue_product, constants)
+
+@timer
+def run_montgomery_exponentiation_no_divider(val: int, exp: int, constants: dict, RR_precomputed):
+    N = constants["N"]
+    R = constants["R"]
+    P = constants["P"]
+    k = constants["k"] 
+    
+    
+    residue_class = Redc(val * RR_precomputed, constants) # equivalent to val*R*R*R^-1 = val*R
+    
+    running_residue_product = R   
+    residue_squarer = residue_class
+    
+    # x[n]
+    
+    while exp != 0:
+        if (exp & 1):
+            T = running_residue_product * residue_squarer
+            running_residue_product = Redc(T, constants)
         
+        T2 = residue_squarer * residue_squarer
+        residue_squarer = Redc(T2, constants)
+        
+        exp = exp >> 1
+
+    return Redc(running_residue_product, constants)
+
 @timer
 def run_standard_exponentiation(val: int, exp: int, N: int):
     running_product = 1   
@@ -257,18 +286,31 @@ if __name__ == "__main__":
     # val = 48
     # val = 1373975162782546632341976312589651798664932843827249717271219843037546624647515417770993256224607179663782097405155585919186224912368912689987092085024864916625863986004190011294571016320531896670275905622285457944422186450485577817330011023154914210381730826259498368910855424071510567873875262223103536781743356764711
     val = random.randint(2**2000, 2**2048)
+    # val = 17494408231072406945641959383517572716256609220143743545686109800938253807137421027191076769856361219009853057109438964090965880194714345910871404702059421073047240693742123820693727628711591608345563709905027454680326713689649156216956752094062262302930285997468486973186103478419749708721165651966962041190556105923989044475570783187580965166641553838761937770637357126252229254051782396435129691082904983188169444768489323357441031007041508901979952213472824900557106322847721591577793751303401203680760962253699292682763609879198170180533887468832814753859729848478231069270608961766203750224943203966595115573832
     
     exp = 2048
+
+    # N = 19
+    # constants = calculate_bezout_constants(N)
+    # val = 3
+    # exp = 10
     
     print(f"\nMontgomery vs Standard Exponentiation: {val.bit_length()}-bit number ^ {exp} (mod {N.bit_length()}-bits number)")
     
     print("\nMontgomery + non_restor_div: ")
     result = run_montgomery_exponentiation(val, exp, constants)
+
+    RR_precomputed = constants["R"]**2 % N
+    print("\nMontgomery (no divider): ")
+    result2 = run_montgomery_exponentiation_no_divider(val, exp, constants, RR_precomputed)
     
-    print("\nOriginal Algorithm + non_restor_div: ")
-    expected = run_standard_exponentiation(val, exp, N)
+    # print("\nOriginal Algorithm + non_restor_div: ")
+    # expected = run_standard_exponentiation(val, exp, N)
     
     print("\nPython pow(): ")
     expected2 = run_python_exponentiation(val, exp, N) # sanity check
-    assert expected == expected2
-    assert result == expected, "Wrong results"
+
+    print("\n")
+    # assert expected == expected2
+    assert result == expected2, "Wrong results"
+    assert result2 == expected2, "Wrong results"
