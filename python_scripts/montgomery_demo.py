@@ -180,7 +180,6 @@ def run_montgomery_exponentiation(val: int, exp: int, constants: dict):
     running_residue_product = R   
     residue_squarer = residue_class
     
-    # x[n]
     
     while exp != 0:
         if (exp & 1):
@@ -206,8 +205,6 @@ def run_montgomery_exponentiation_no_divider(val: int, exp: int, constants: dict
     
     running_residue_product = R   
     residue_squarer = residue_class
-    
-    # x[n]
     
     while exp != 0:
         if (exp & 1):
@@ -245,7 +242,6 @@ def run_python_exponentiation(val: int, exp: int, N: int):
     # return val**exp % N
     return pow(val, exp, N)
     
-    
 if __name__ == "__main__":
 
     # (non_restor edge case failing)
@@ -265,7 +261,7 @@ if __name__ == "__main__":
     # vals_mont_form = [1*constants["R"],2*constants["R"]]  # should give 1*2 = 2 
     vals_mont_form = [1, 2] # 1 = mont(R^-1) = mont(49), 2 = mont(2*R^-1) = mont(41)
     result = run_montgomery_mult_precomputed(vals_mont_form, constants)
-    print(f"Mult mod {N} (In Mont Form {vals_mont_form}) result : {result}")
+    print(f"Multiplying (in Mont Form) {vals_mont_form} values mod {N} result : {result}")
     assert result == (math.prod(vals_mont_form) % N) * (constants["P"]**len(vals_mont_form) % N) % N
 
     ## Montgomery Multiplication ###
@@ -274,7 +270,7 @@ if __name__ == "__main__":
     result = run_montgomery_mult(vals, constants)
     expected = math.prod(vals) % N
 
-    print(f"Mult mod {N} ({vals}) result: {result}")
+    print(f"Multiplying {vals} mod {N}. Result: {result}")
     assert expected == result
     
     ### Montgomery Exponentiation ###
@@ -282,6 +278,7 @@ if __name__ == "__main__":
     N = 24298603348542999239474744469072890490956354295641370729036981648708630343434725324552857951009931558546313766563870577924497779647807993675137391985388865972325629382224451115147388661855418295796796426092117412381873609522077928268569523964665547055712043997759152822443548229142496038633810462117915959965269710922465262548828341138509786372705797502294771830110882552969910298655546490669918353671710285533456039285707492948419069894361429814515896814459547808304401372368479975170068863943438080814679348043287738485812146166554250955487778956844544755844751992223318142581805914904219738103941508103889347156767
     N = N**2
     constants = calculate_bezout_constants(N)
+    # print(constants)
     
     # val = 48
     # val = 1373975162782546632341976312589651798664932843827249717271219843037546624647515417770993256224607179663782097405155585919186224912368912689987092085024864916625863986004190011294571016320531896670275905622285457944422186450485577817330011023154914210381730826259498368910855424071510567873875262223103536781743356764711
@@ -301,6 +298,7 @@ if __name__ == "__main__":
     result = run_montgomery_exponentiation(val, exp, constants)
 
     RR_precomputed = constants["R"]**2 % N
+    # print(RR_precomputed)
     print("\nMontgomery (no divider): ")
     result2 = run_montgomery_exponentiation_no_divider(val, exp, constants, RR_precomputed)
     
