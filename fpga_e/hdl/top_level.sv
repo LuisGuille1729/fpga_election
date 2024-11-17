@@ -83,6 +83,8 @@ vote_processor #(
   .clk_in(clk_100mhz),
   .rst_in(sys_rst),
   .valid_in(valid_data),
+  //TODO
+  .stall_in(),
   .new_byte_in(data_received_byte),
   .vote_out(candidate_vote),
   .valid_vote_out(valid_vote_out)
@@ -94,7 +96,7 @@ logic random_valid;
 rand_gen#(
   .BITSIZE(REGISTER_SIZE)
 ) 
-rng
+rng_stream
 (
   .clk_in(clk_100mhz),
   .rst_in(sys_rst),
@@ -148,10 +150,12 @@ evt_counter #(.MAX_COUNT(NUM_N_SQUARED_BLOCKS))
     .evt_in(consumed_n_squared_out),
     .count_out(n_squared_select_out)
   );
+
+  logic consumed_k_out;
   evt_counter #(.MAX_COUNT(NUM_K_BLOCKS))
   ( .clk_in(clk_100mhz),
     .rst_in(sys_rst),
-    .evt_in(placeholder1_mult_valid_out),
+    .evt_in(consumed_k_out),
     .count_out(k_select_out)
   );
 
@@ -161,17 +165,34 @@ logic placeholder_reduce_valid1;
   montgomery_reduce#(
     .register_size(REGISTER_SIZE),
     .num_blocks(NUM_T_BLOCKS),
-  ) reducer1(
+  ) reducer1_stream(
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .valid_in(placeholder1_mult_valid_out),
     .product_t_in(placeholder1_mult_out),
     .k_in(k_select_out),
+    .consumed_k_out(consumed_k_out),
     .n_squared_in(n_squared_select_out),
     .consumed_n_squared_out(consumed_n_squared_out),
     .data_out(reduced_product_block),
     .valid_out(placeholder_reduce_valid1)
+);
+
+squarer_streamer#(
+    .register_size(REGISTER_SIZE),
+    .num_blocks(NUM_T_BLOCKS),
 )
+squarer_stream ( 
+  .clk_in(clk_100mhz),
+  .rst_in(sys_rst),
+  .valid_in(placeholder_reduce_valid1),
+  .initial_data_stream_in(reduced_product_block),
+
+)
+
+
+
+
     
 
 
