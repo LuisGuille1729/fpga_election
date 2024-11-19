@@ -57,15 +57,11 @@ async def  test_kernel(dut):
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.valid_in.value = 0
     await reset(dut.rst_in,dut.clk_in)
-    # num_1 = 10 + 6 *2**register_size + 10 *2**(2*register_size)
-    # num_2 = 9 + 10 *2**register_size + 7 *2**(2*register_size)
-    # num_1 = 1234
 
     num_2 = 3677
 
     for num_1 in range(2**bits_in_num):
         await test_nums(dut,num_1,num_2)
-    # await test_nums(dut,num_1,num_2)
 
 
 

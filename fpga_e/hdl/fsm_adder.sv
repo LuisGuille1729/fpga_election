@@ -23,7 +23,6 @@ module fsm_adder  #(
     localparam BRAM_DEPTH = bits_in_num/BRAM_WIDTH;
     localparam ADDR_WIDTH = $clog2(BRAM_DEPTH);
 
-    logic [$clog2(BRAM_DEPTH):0] address_index;
 
     // only using port a for reads: we only use dout
     logic [BRAM_WIDTH-1:0]     douta;

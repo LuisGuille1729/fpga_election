@@ -25,16 +25,22 @@ def fft_multiply_large_base(num1, num2, base=2):
     fft_A = np.fft.fft(A, size)
     print(" size 4:", len(fft_A))
     fft_B = np.fft.fft(B, size)
+
+    # print(fft_A)
+    print(len(fft_A))
     
     # Pointwise multiplication in the frequency domain
     fft_result = fft_A * fft_B
 
     # for i in range(len(fft_result)):
-    #     print(fft_result[i])
+    #     print(fft_A[i])
 
     
     # Inverse FFT to get polynomial coefficients in time domain
     result_coeffs = np.fft.ifft(fft_result).real.round().astype(int)
+
+    # print(result_coeffs)
+    # print(np.fft.ifft(fft_result))
     
     # Handle carries with the new base
     carry = 0
