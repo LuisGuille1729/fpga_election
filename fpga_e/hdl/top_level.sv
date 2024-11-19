@@ -124,61 +124,68 @@ module top_level
     .valid_out(random_valid)
   );
 
-  // [Multiplier Block Select Counter of RNG * r_squared_mod]
-  logic[$clog2(NUM_R_SQUARED_BLOCKS)-1:0] r_squared_select_index;
-  logic[REGISTER_SIZE-1:0] r_squared_mod_select_out;
-  assign r_squared_mod_select_out = r_squared[r_squared_select_index];
+  // [Multiplier Block Select Counter]
+  // R_SQUARED Block Select
+  logic[$clog2(NUM_R_SQUARED_BLOCKS)-1:0] r_squared_select_index;   //! Convention: _select_index
   evt_counter #(.MAX_COUNT(NUM_R_SQUARED_BLOCKS))
-    ( .clk_in(clk_100mhz),
-      .rst_in(sys_rst),
-      .evt_in(random_valid),
-      .count_out(r_squared_mod_select_out)
-    );
+  r_squared_block_select
+  ( .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .evt_in(random_valid),  
+    .count_out(r_squared_select_index) // Notice this is initialized to 0, and there's a 1 cycle delay until next index.
+  );
+  logic[REGISTER_SIZE-1:0] r_squared_selected_block;              //! Convention: _selected_block
+  assign r_squared_selected_block = r_squared[r_squared_select_index];
 
-  logic [REGISTER_SIZE-1:0] placeholder1_mult_out;
-  logic placeholder1_mult_valid_out;
+  // MULTIPLIER rand * r_squared_mod
+  logic [REGISTER_SIZE-1:0] rand_RR_mult_out_block;
+  logic rand_RR_mult_out_valid;
   fsm_multiplier  #(
     .register_size(REGISTER_SIZE),
     .bits_in_num(R_SQUARED_MOD_SIZE)
   )
-  entry_multplier
+  multplier_rand_RR
   (
     .n_in(random_block),
-    .m_in(r_squared_mod_select_out),
+    .m_in(r_squared_selected_block),
     .valid_in(random_valid),
     .rst_in(sys_rst),
     .clk_in(clk_100mhz),
-    .data_out(placeholder1_mult_out),
-    .valid_out(placeholder1_mult_valid_out),
+    .data_out(rand_RR_mult_out_block),
+    .valid_out(rand_RR_mult_out_valid),
   );
 
 
+  // [Montgomery Reduction Block Select Counters] 
+  // N_SQUARED Block Select
   logic[$clog2(NUM_N_SQUARED_BLOCKS)-1:0] n_squared_select_index;
-  logic[REGISTER_SIZE-1:0] n_squared_select_out;
-  assign n_squared_select_out = n_squared[n_squared_select_index];
-
-  logic[$clog2(NUM_K_BLOCKS)-1:0] k_select_index;
-  logic[REGISTER_SIZE-1:0] k_select_out;
-  assign k_select_out = k[k_select_index];
-
-  logic consumed_n_squared_out;
-
+  logic consumed_n_squared_out; // triggers after reducing (TODO: initialize to 0)
   evt_counter #(.MAX_COUNT(NUM_N_SQUARED_BLOCKS))
+  n_squared_block_select
   ( .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .evt_in(consumed_n_squared_out),
-    .count_out(n_squared_select_out)
+    .count_out(n_squared_select_index)
   );
+  logic[REGISTER_SIZE-1:0] n_squared_selected_block;
+  assign n_squared_selected_block = n_squared[n_squared_select_index];
 
-  logic consumed_k_out;
+  
+  // K Block Select
+  logic[$clog2(NUM_K_BLOCKS)-1:0] k_select_index;
+  logic consumed_k_out; // triggers after reducing (TODO: initialize to 0)
   evt_counter #(.MAX_COUNT(NUM_K_BLOCKS))
+  k_block_select
   ( .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .evt_in(consumed_k_out),
-    .count_out(k_select_out)
+    .count_out(k_select_index)
   );
+  logic[REGISTER_SIZE-1:0] k_selected_block;
+  assign k_selected_block = k[k_select_index];
 
 
+  // MONTGOMERY REDUCE rand*R*R  (will get montgomery form of rand)
   logic [REGISTER_SIZE-1:0] reduced_product_block;
   logic placeholder_reduce_valid1;
   montgomery_reduce#(
@@ -189,9 +196,9 @@ module top_level
     .rst_in(sys_rst),
     .valid_in(placeholder1_mult_valid_out),
     .product_t_in(placeholder1_mult_out),
-    .k_in(k_select_out),
+    .k_in(k_selected_block),
     .consumed_k_out(consumed_k_out),
-    .n_squared_in(n_squared_select_out),
+    .n_squared_in(n_squared_selected_block),
     .consumed_n_squared_out(consumed_n_squared_out),
     .data_out(reduced_product_block),
     .valid_out(placeholder_reduce_valid1)
