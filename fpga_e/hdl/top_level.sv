@@ -203,19 +203,53 @@ module top_level
     .data_out(reduced_product_block),
     .valid_out(placeholder_reduce_valid1)
   );
-
-  squarer_streamer#(
+logic [REGISTER_SIZE-1:0] squarer_out;
+logic placeholder1_squarer_out
+squarer_streamer#(
     .register_size(REGISTER_SIZE),
     .num_blocks(NUM_T_BLOCKS),
-  )
-  squarer_stream ( 
-    .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
-    .valid_in(placeholder_reduce_valid1),
-    .initial_data_stream_in(reduced_product_block),
+)
+squarer_stream ( 
+  .clk_in(clk_100mhz),
+  .rst_in(sys_rst),
+  .valid_in(placeholder_reduce_valid1),
+  .initial_data_stream_in(reduced_product_block),
+  .k_in(k_select_out),
+  .consumed_k_out(consumed_k_out),
+  .n_squared_in(n_squared_select_out),
+  .consumed_n_squared_out(consumed_n_squared_out),
+  .data_out(squarer_out),
+  .valid_out(placeholder1_squarer_out)
+);
 
-  )
-// forcing git to accept changes lol
+// logic [REGISTER_SIZE-1:0] squarer_out;
+// logic placeholder1_squarer_out
+mont_accumulator#(
+    .register_size(REGISTER_SIZE),
+    .num_blocks(NUM_T_BLOCKS),
+)
+// TODO assuming stream is alignedwith squarer stream which is likely the case 
+monty_hall ( 
+  .clk_in(clk_100mhz),
+  .rst_in(sys_rst),
+  .valid_in(placeholder1_squarer_out),
+  .data_stream_in(squarer_out),
+  .k_in(k_select_out),
+  .n_squared_in(n_squared_select_out),
+  .data_out(squarer_out),
+  .valid_out(placeholder1_squarer_out)
+);
+
+
+
+// TODO Fill in the Encryptor stuff post montgomery exponentiation
+// at this point we can test if encryption works for 1 candidate
+
+
+
+
+
+
 
 
 
