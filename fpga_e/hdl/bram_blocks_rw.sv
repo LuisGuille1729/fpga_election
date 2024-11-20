@@ -9,6 +9,7 @@ module bram_blocks_rw #(
 
     input wire [REGISTER_SIZE-1:0] read_next_block_valid_in, 
     output logic read_block_out,
+    output logic read_block_pipe2_valid_out,
     
     input wire write_next_block_valid_in,
     input wire [REGISTER_SIZE-1:0] write_block_in
@@ -39,9 +40,16 @@ evt_counter #(.MAX_COUNT(NUM_BLOCKS))
     .count_out(address_of_write_block)
 );
 
+logic valid_pipe1;
 always_ff @( posedge clk_in ) begin
-   address_of_read_block <= 0;
-   address_of_write_block <= 0;
+    if (rst_in) begin
+        address_of_read_block <= 0;
+        address_of_write_block <= 0;
+    end else begin
+        valid_pipe1 <= read_next_block_valid_in;
+        read_block_pipe2_valid_out <= valid_pipe1;  // give signal when read value has been obtained
+    end
+
 end
 
 // BRAM
