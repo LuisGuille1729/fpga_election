@@ -110,6 +110,10 @@ if __name__ == "__main__":
     plaintext_out = decrypt(keys, ciphertext)
     print(f"In: {plaintext_in},\nCiphertext: {ciphertext},\nDecode: {plaintext_out}")
 
+    print(f"n bits: {keys.public.n.bit_length()}")
+    print(f"n^2 bits: {keys.public.n_square.bit_length()}")
+    print(f"n^2 * (2^4096 - 1) bits {(keys.public.n_square * (2**4096 - 1)).bit_length()}")
+
     # for example: 
     # python paillier.py "Hello Paillier"
     if len(sys.argv) > 1:

@@ -141,8 +141,8 @@ module top_level
   logic [REGISTER_SIZE-1:0] rand_RR_mult_out_block;
   logic rand_RR_mult_out_valid;
   fsm_multiplier  #(
-    .register_size(REGISTER_SIZE),
-    .bits_in_num(R_SQUARED_MOD_SIZE)
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .BITS_IN_NUM(R_SQUARED_MOD_SIZE)
   )
   multplier_rand_RR
   (
@@ -186,11 +186,12 @@ module top_level
 
 
   // MONTGOMERY REDUCE rand*R*R  (will get montgomery form of rand)
-  logic [REGISTER_SIZE-1:0] reduced_product_block;
-  logic placeholder_reduce_valid1;
+  logic [REGISTER_SIZE-1:0] rand_RR_reduced_block;
+  logic rand_RR_reduced_valid;
   montgomery_reduce#(
-    .register_size(REGISTER_SIZE),
-    .num_blocks(NUM_T_BLOCKS),
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
+    .R(R_EXPONENT)
   ) reducer1_stream(
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
@@ -200,20 +201,22 @@ module top_level
     .consumed_k_out(consumed_k_out),
     .n_squared_in(n_squared_selected_block),
     .consumed_n_squared_out(consumed_n_squared_out),
-    .data_out(reduced_product_block),
-    .valid_out(placeholder_reduce_valid1)
+    .data_out(rand_RR_reduced_block),
+    .valid_out(rand_RR_reduced_valid)
   );
+
+// SQUARER STREAM
 logic [REGISTER_SIZE-1:0] squarer_out;
 logic placeholder1_squarer_out
 squarer_streamer#(
-    .register_size(REGISTER_SIZE),
-    .num_blocks(NUM_T_BLOCKS),
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
 )
 squarer_stream ( 
   .clk_in(clk_100mhz),
   .rst_in(sys_rst),
-  .valid_in(placeholder_reduce_valid1),
-  .initial_data_stream_in(reduced_product_block),
+  .valid_in(rand_RR_reduced_valid),
+  .initial_data_stream_in(rand_RR_reduced_block),
   .k_in(k_select_out),
   .consumed_k_out(consumed_k_out),
   .n_squared_in(n_squared_select_out),
@@ -226,7 +229,7 @@ squarer_stream (
 // logic placeholder1_squarer_out
 mont_accumulator#(
     .register_size(REGISTER_SIZE),
-    .num_blocks(NUM_T_BLOCKS),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
 )
 // TODO assuming stream is alignedwith squarer stream which is likely the case 
 monty_hall ( 

@@ -2,8 +2,8 @@
 // computes addition of 2 numbers by writting to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
 module great_adder  #(
-    parameter register_size = 32,
-    parameter bits_in_num = 2048
+    parameter REGISTER_SIZE = 32,
+    parameter BITS_IN_NUM = 2048
     )
     (
         input wire [register_size-1:0] a_in,
