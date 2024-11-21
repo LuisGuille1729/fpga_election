@@ -21,33 +21,24 @@ module fsm_multiplier  #(
     assign ready_out = mult_states == idle;
 
     localparam BRAM_WIDTH = register_size;
-    localparam BRAM_CYCLE_DELAY = 2;
-
-    // we'll be storing 1 number per bram
-    localparam INPUT_BRAM_DEPTH = 1*(bits_in_num/BRAM_WIDTH);
-
-    
-    localparam INPUT_ADDR_WIDTH = $clog2(INPUT_BRAM_DEPTH);
+    localparam BRAM_DEPTH = bits_in_num/BRAM_WIDTH;
+    localparam ADDR_WIDTH = $clog2(BRAM_DEPTH);
 
 
     // storage bram data 
-    logic [INPUT_BRAM_DEPTH-1:0]     douta_n;
-    logic [INPUT_BRAM_DEPTH-1:0]     douta_m;   
-
-    //input data to be stored in brams
-    logic [INPUT_BRAM_DEPTH-1:0]     dinb_n;
-    logic [INPUT_BRAM_DEPTH-1:0]     dinb_m;
+    logic [BRAM_WIDTH-1:0]     douta_n;
+    logic [BRAM_WIDTH-1:0]     douta_m;   
     
     //addresses to read from 2 clock cycles in future
-    logic [INPUT_ADDR_WIDTH-1:0]     addra_m;
-    logic [INPUT_ADDR_WIDTH-1:0]     addra_n;
+    logic [ADDR_WIDTH-1:0]     addra_m;
+    logic [ADDR_WIDTH-1:0]     addra_n;
 
     //addresses to write to 2 clock cycles in the future
-    logic [INPUT_ADDR_WIDTH-1:0]     addrb_m;
-    logic [INPUT_ADDR_WIDTH-1:0]     addrb_n;
+    logic [ADDR_WIDTH-1:0]     addrb_m;
+    logic [ADDR_WIDTH-1:0]     addrb_n;
 
-    logic [INPUT_ADDR_WIDTH-1:0]     cur_count;
-    logic [INPUT_ADDR_WIDTH +1:0]   send_count;
+    logic [ADDR_WIDTH-1:0]     cur_count;
+    logic [ADDR_WIDTH +1:0]   send_count;
 
 
 
@@ -87,18 +78,21 @@ module fsm_multiplier  #(
                 end
                 writting:begin
                     if (valid_in) begin
-                        mult_states <=  addrb_n == INPUT_BRAM_DEPTH-1? begin_loading : writting;
-                        addrb_n <=  addrb_n + 1;
-                        addrb_m <=  addrb_m + 1;
+                        if (addrb_n == BRAM_DEPTH-1) begin 
+                            mult_states <= begin_loading;
+                            //reset writting positions:
+                            addrb_m<=0;
+                            addrb_n <=0;
+                        end else begin
+                            addrb_n <=  addrb_n + 1;
+                            addrb_m <=  addrb_m + 1; 
+                        end
                     end
                 end
 
 // we are multiplying n by m (ie we keep each chunk of m fixed per iteration)
 // we also asusume they come here aligned as should be
                 begin_loading:begin
-                    //reset writting positions:
-                    addrb_m<=0;
-                    addrb_n <=0;
                     // cleaning accumulator bram may take longer than expected
                     if (store_ready)begin
                         mult_states <= middle_loading;
@@ -115,8 +109,8 @@ module fsm_multiplier  #(
                 stream_loading: begin
                     addra_n <= addra_n +1;  
                     //addra_n is 2 in front of b
-                    if (cur_count == INPUT_BRAM_DEPTH-1) begin
-                        mult_states <= addra_m ==  INPUT_BRAM_DEPTH-1? outputing: waiting;
+                    if (cur_count == BRAM_DEPTH-1) begin
+                        mult_states <= addra_m ==  BRAM_DEPTH-1? outputing: waiting;
                     end else begin
                         cur_count <= cur_count +1;
                     end
@@ -138,7 +132,7 @@ module fsm_multiplier  #(
                     store_shift<=0;
                     cur_count <=0;
                     // mult_states <= store_ready? idle: outputing;
-                    mult_states <= send_count == 4*INPUT_BRAM_DEPTH-1? idle:outputing;
+                    mult_states <= send_count == 4*BRAM_DEPTH-1? idle:outputing;
                 end
                 
 
@@ -195,16 +189,16 @@ module fsm_multiplier  #(
         .ready_out(accum_ready)
     );
 
-    assign valid_out = accum_valid && mult_states == outputing && send_count > 2*INPUT_BRAM_DEPTH-1;
+    assign valid_out = accum_valid && mult_states == outputing && send_count > 2*BRAM_DEPTH-1;
 
 
 
 
-    logic input_write_on;
-    assign input_write_on = (mult_states == idle || mult_states == writting) && valid_in;
+    logic write_on;
+    assign write_on = (mult_states == idle || mult_states == writting) && valid_in;
     xilinx_true_dual_port_read_first_2_clock_ram
      #(.RAM_WIDTH(BRAM_WIDTH),
-       .RAM_DEPTH(INPUT_BRAM_DEPTH)) m_bram
+       .RAM_DEPTH(BRAM_DEPTH)) m_bram
        (
         // PORT A
         .addra(addra_m),
@@ -219,7 +213,7 @@ module fsm_multiplier  #(
         .addrb(addrb_m),
         .dinb(m_in),
         .clkb(clk_in),
-        .web(input_write_on), 
+        .web(write_on), 
         .enb(1'b1),
         .rstb(rst_in),
         .regceb(1'b1),
@@ -229,7 +223,7 @@ module fsm_multiplier  #(
 
 xilinx_true_dual_port_read_first_2_clock_ram
      #(.RAM_WIDTH(BRAM_WIDTH),
-       .RAM_DEPTH(INPUT_BRAM_DEPTH)) n_bram
+       .RAM_DEPTH(BRAM_DEPTH)) n_bram
        (
         // PORT A
         .addra(addra_n),
@@ -244,7 +238,7 @@ xilinx_true_dual_port_read_first_2_clock_ram
         .addrb(addrb_n),
         .dinb(n_in),
         .clkb(clk_in),
-        .web(input_write_on), 
+        .web(write_on), 
         .enb(1'b1),
         .rstb(rst_in),
         .regceb(1'b1),

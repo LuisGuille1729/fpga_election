@@ -11,6 +11,9 @@ from cocotb.triggers import Timer, ClockCycles, RisingEdge, FallingEdge, ReadOnl
 from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 
+
+import random
+
 from random import getrandbits
 
 async def reset(rst,clk):
@@ -37,29 +40,28 @@ async def test_nums(dut,num_1,num_2):
     num_1 = num_1%(2**bits_in_num)
     num_2 = num_2%(2**bits_in_num)
     expected_product = num_1*num_2
-    # max_wait = 10000
-    print("expected prod", expected_product)
+    clk_cys = 0
     for i in range(bits_in_num//register_size):
         n_i = num_1//(2**(register_size*i))% (2**register_size)
         m_i = num_2//(2**(register_size*i))% (2**register_size)
         await send_num(dut,dut.clk_in,n_i,m_i)
+        clk_cys += 1
         if (dut.valid_out.value == 1):
             # print("got", int(dut.data_out.value))
             running_prod += (int(dut.data_out.value))*(2**(register_size*nums_received))
             nums_received += 1
-        
-    while (nums_received < 2*bits_in_num//register_size ):
+    
+    while (nums_received != 2*bits_in_num//register_size ):
         await ClockCycles(dut.clk_in,1)
+        clk_cys += 1
         # print("got", int(dut.data_out.value))
         if (dut.valid_out.value == 1):
             running_prod += (int(dut.data_out.value))*(2**(register_size*nums_received))
             nums_received += 1
         # max_wait -= 1
-    print(num_1,num_2)
-    print("actual prod", running_prod)
     while (dut.ready_out.value != 1):
             await ClockCycles(dut.clk_in,1)
-    await ClockCycles(dut.clk_in,10)
+    # await ClockCycles(dut.clk_in,10)
     assert(running_prod == expected_product)
 
 
@@ -93,13 +95,19 @@ async def  find_test(dut):
     # await test_nums(dut,1,2048);
     # for i in range(2**12):
     #     await test_nums(dut,i,2047);
-    for i in range(2**bits_in_num):
-        await test_nums(dut,i,i);
+
+    await test_nums(dut,2**(bits_in_num-1),2**(bits_in_num-2));
+    # await test_nums(dut,8,4);
+    for i in range(1000):
+        print("test",i)
+        rand_num1 = random.randint(0, 2**bits_in_num-1)
+        rand_num2 = random.randint(0, 2**bits_in_num-1)
+        await test_nums(dut,rand_num1,rand_num2);
     # for num_1 in range(2**bits_in_num):
     #     await test_nums(dut,num_1,num_2)    
 
-register_size = 2
-bits_in_num = 12
+register_size = 32
+bits_in_num = 4096
 def test_tmds_runner():
     """Run the TMDS runner. Boilerplate code"""
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
