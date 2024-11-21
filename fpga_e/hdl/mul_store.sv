@@ -20,7 +20,7 @@ module mul_store  #(
 
     enum  {cleaning, idle, num_storing, start_output, continue_output, outputing} store_states;
 
-    assign ready_out = store_states != cleaning;
+    assign ready_out = store_states == idle ||  store_states == num_storing ;
 
     localparam BRAM_WIDTH = register_size;
     //store the 2 nums + the alignment of the second one
@@ -135,7 +135,7 @@ assign shifted_addrb = store_states == idle? addrb + start_padding: addrb;
         .addra(shifted_addra),
         .dina(low_in), 
         .clka(clk_in),
-        .wea(write_on && !(store_states ==cleaning)), 
+        .wea(write_on && !(store_states ==cleaning) && !(store_states == outputing)), 
         .ena(1'b1),
         .rsta(rst_in),
         .regcea(1'b1),

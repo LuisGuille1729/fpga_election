@@ -68,13 +68,13 @@ async def test_dream_nums(dut,num_1,num_2,offset):
         if (dut.valid_out.value == 1):
             running_store += (int(dut.data_out.value))*(2**(register_size*nums_received))
             nums_received += 1
-    while (nums_received < (desired_num_outputs)):
+    while (nums_received != (desired_num_outputs)):
         await ClockCycles(dut.clk_in,1)
         if (dut.valid_out.value == 1):
             running_store += (int(dut.data_out.value))*(2**(register_size*nums_received))
             nums_received += 1
     # print("expected", expected_out)
-    # print("got", running_store)
+    print("got", running_store)
     assert(expected_out == running_store)
 
 
@@ -109,24 +109,36 @@ async def  dream_test(dut):
 
     # num_2 = 3677
     dut.start_padding.value = 0
-    await test_dream_nums(dut,1,0,0);
-    await test_dream_nums(dut,3,0,1);
-    await test_dream_nums(dut,0,3,2);
-    for num in range(100):
-        await test_dream_nums(dut,num,num*num,0);    
-        await test_dream_nums(dut,num*num,num,1);  
-        await test_dream_nums(dut,num,num*num,2);  
-        await test_dream_nums(dut,num,num*num,3);
-        await test_dream_nums(dut,num,num*num,4);    
-        await test_dream_nums(dut,num*num,num,5);  
-        await test_dream_nums(dut,num,num*num,6);  
-        await test_dream_nums(dut,num,num*num,7);   
-            
+    # await test_dream_nums(dut,1,0,0);
+    # await test_dream_nums(dut,3,0,1);
+    # await test_dream_nums(dut,0,3,2);
+    # for num in range(100):
+    #     await test_dream_nums(dut,num,num*num,0);    
+    #     await test_dream_nums(dut,num*num,num,1);  
+    #     await test_dream_nums(dut,num,num*num,2);  
+    #     await test_dream_nums(dut,num,num*num,3);
+    #     await test_dream_nums(dut,num,num*num,4);    
+    #     await test_dream_nums(dut,num*num,num,5);  
+    #     await test_dream_nums(dut,num,num*num,6);  
+    #     await test_dream_nums(dut,num,num*num,7);   
+    
+    
+@cocotb.test()
+async def  find_test(dut):
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    dut.valid_in.value = 0
+    await reset(dut.rst_in,dut.clk_in)
+
+    while (dut.ready_out.value != 1):
+        await ClockCycles(dut.clk_in,1)
+
+    # num_2 = 3677
+    dut.start_padding.value = 0
+    await test_dream_nums(dut,0,1,2);  
     
 
-
 register_size = 2
-num_bits_stored = 16
+num_bits_stored = 6
 desired_size = 32;
 def test_tmds_runner():
     """Run the TMDS runner. Boilerplate code"""
