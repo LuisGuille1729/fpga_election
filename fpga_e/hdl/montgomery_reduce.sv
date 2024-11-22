@@ -1,5 +1,6 @@
 `default_nettype none
 
+// Efficiently calculates T(R^-1) mod N
 module montgomery_reduce #(
     parameter REGISTER_SIZE = 32,
     parameter NUM_BLOCKS = 256,
@@ -9,7 +10,7 @@ module montgomery_reduce #(
     input wire rst_in,
 
     input wire valid_in,
-    input wire [REGISTER_SIZE-1:0] T_block_in,   // the number we want to reduce by
+    input wire [REGISTER_SIZE-1:0] T_block_in,   // the number we want to reduce
     
     input wire [REGISTER_SIZE-1:0] k_constant_block_in, 
     output logic consumed_k_out,
@@ -18,13 +19,12 @@ module montgomery_reduce #(
     output logic consumed_N_out,
 
     output valid_out,
-    output data_block_out,
-)
-// Efficiently calculates T(R^-1) mod N
+    output data_block_out
+);
 // For most use cases, modN_constant_block_in will be our n_squared
 
 localparam T_TOTAL_SIZE = REGISTER_SIZE*NUM_BLOCKS;
-localparam CONSTANT_SIZE = R
+localparam CONSTANT_SIZE = R;
 
 
 // Store T for later use in adder (T + mN)
@@ -43,7 +43,7 @@ T_blocks_BRAM
 
     // Write T !!!
     .write_next_block_valid_in(valid_in),   
-    .write_block_in(T_block_in)
+    .write_block_in(T_block_in),
 
     // Read T (needed for later)
     .read_next_block_valid_in(read_next_T_block_valid), 
@@ -71,7 +71,7 @@ modulo_of_power #(
 
     .valid_out(T_modR_valid),
     .data_block_out(T_modR_block)
-)
+);
 
 
 // Multiplier: T%R * k
@@ -92,10 +92,12 @@ multiplier_TmodR_times_k
 
     .data_out(Tk_product_block_value),
     .valid_out(Tk_product_valid)
-)
+);
 
 always_ff @( posedge clk_in ) begin
-    if (!sys_rst)
+    if (sys_rst)
+        consumed_k_out <= 0;
+    else
         consumed_k_out <= T_modR_valid; // request next k block for the multiplier
 end
 
@@ -117,7 +119,9 @@ modulo_of_power #(
 
     .valid_out(product_Tk_modR_valid),
     .data_block_out(product_Tk_modR_block)
-)
+);
+
+//*** calculate t :=  (T+mN)/R ***//
 
 // Multiplier m * N
 logic product_Mn_valid;
@@ -137,14 +141,17 @@ multiplier_m_times_N
 
     .data_out(product_Mn_block),
     .valid_out(product_Mn_valid)
-)
+);
+
 always_ff @( posedge clk_in ) begin
-    if (!sys_rst)
+    if (sys_rst)
+        consumed_N_out <= 0;
+    else
         consumed_N_out <= product_Tk_modR_valid; // request next N block for the multiplier
 end
 
 // Adder T + mN
-logic addition_T_mN_valid;
+logic addition_T_mN_result_valid;
 logic [REGISTER_SIZE-1:0] addition_T_mN_block;
 logic addition_T_mN_block_carry;
 logic addition_T_mN_done;
@@ -166,9 +173,9 @@ adder_T_plus_mN
 
     .data_out(addition_T_mN_block),
     .carry_out(addition_T_mN_block_carry), // The carry will be needed to determine if t < N or not !!!
-    .valid_out(addition_T_mN_valid),
+    .valid_out(addition_T_mN_result_valid),
     .final_out(addition_T_mN_done)
-)
+);
 
 
 always_ff @(posedge clk_in) begin
@@ -210,7 +217,7 @@ assign t_block_valid = rshift_T_mN_byR_valid;
 logic [REGISTER_SIZE-1:0] t_block_value;
 assign t_block_value = rshift_T_mN_byR_block;
 
-// Need to determine if t < N
+//*** Output (t < N) ? t : N-t (this output will be equivalent to T%N) ***//
 
 // Idea:
 // new module for comparison,
@@ -221,6 +228,11 @@ assign t_block_value = rshift_T_mN_byR_block;
 // we would likely want an module to make this subtraction easier.
 // sadly needing to get this comparison will delay us by NUM_BLOCKS=256 cycles
 // maybe there's a workaround? 
+
+
+
+
+
 
 endmodule
 
