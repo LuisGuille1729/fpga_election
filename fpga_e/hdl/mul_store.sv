@@ -18,6 +18,61 @@ module mul_store  #(
         output logic ready_out
     );
 
+    logic [REGISTER_SIZE-1:0] high_in_used;
+    logic [REGISTER_SIZE-1:0] low_in_used;
+    logic [$clog2(DESIRED_SIZE):0] start_padding_used;
+    logic valid_in_used;
+    localparam MIN_PIPE_DELAY = 1;
+
+    pipeliner#(
+        .PIPELINE_STAGE_COUNT(MIN_PIPE_DELAY),
+        .DATA_BIT_SIZE(REGISTER_SIZE)
+    )
+    pip1 (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .data_in(high_in),
+        .data_out(high_in_used)
+    );
+
+    pipeliner#(
+        .PIPELINE_STAGE_COUNT(MIN_PIPE_DELAY),
+        .DATA_BIT_SIZE(REGISTER_SIZE)
+    )
+    pip2 (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .data_in(low_in),
+        .data_out(low_in_used)
+    );
+
+    pipeliner#(
+        .PIPELINE_STAGE_COUNT(MIN_PIPE_DELAY),
+        .DATA_BIT_SIZE($clog2(DESIRED_SIZE) +1)
+    )
+    pip3 (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .data_in(start_padding),
+        .data_out(start_padding_used)
+    );
+
+
+    pipeliner#(
+        .PIPELINE_STAGE_COUNT(MIN_PIPE_DELAY),
+        .DATA_BIT_SIZE(1)
+    )
+    pip4 (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .data_in(valid_in),
+        .data_out(valid_in_used)
+    );
+
+
+    
+
+
     enum  {cleaning, idle, num_storing, start_output, continue_output, outputing} store_states;
 
     assign ready_out = (store_states == idle) || (store_states == num_storing) ;
@@ -62,19 +117,19 @@ module mul_store  #(
                     end
                 end
                 idle: begin
-                    if (valid_in) begin 
-                        if ((addra + start_padding) == STORE_CUTOFF) begin
+                    if (valid_in_used) begin 
+                        if ((addra + start_padding_used) == STORE_CUTOFF) begin
                             store_states <= start_output;
                         end else begin
-                            addrb <=  addrb + 1 + start_padding;
-                            addra <= addra + 1 + start_padding;
+                            addrb <=  addrb + 1 + start_padding_used;
+                            addra <= addra + 1 + start_padding_used;
                             store_states <= num_storing;
                             cur_count <= 1;
                         end
                     end
                 end
                 num_storing: begin
-                    if (valid_in) begin 
+                    if (valid_in_used) begin 
                         if( cur_count == DESIRED_STORE_COUNT-1) begin 
                             addrb <= 0;
                             addra <= 0;
@@ -116,17 +171,17 @@ module mul_store  #(
 
     logic write_on;
     assign write_on =  (store_states == cleaning)
-                    || ((store_states == num_storing || store_states == idle) && valid_in)
+                    || ((store_states == num_storing || store_states == idle) && valid_in_used)
                     || (store_states ==  outputing);
 
     logic [REGISTER_SIZE-1:0] b_write;
-    assign b_write = (store_states == num_storing) || (store_states == idle) ? high_in : 0;
+    assign b_write = (store_states == num_storing) || (store_states == idle) ? high_in_used : 0;
 
     logic [ADDR_WIDTH-1:0]     shifted_addra;
-    assign shifted_addra = (store_states == idle) ? addra + start_padding: addra;
+    assign shifted_addra = (store_states == idle) ? addra + start_padding_used: addra;
 
     logic [ADDR_WIDTH-1:0]     shifted_addrb;
-    assign shifted_addrb = (store_states == idle) ? addrb + start_padding: addrb;
+    assign shifted_addrb = (store_states == idle) ? addrb + start_padding_used: addrb;
 
     xilinx_true_dual_port_read_first_2_clock_ram
      #(.RAM_WIDTH(BRAM_WIDTH),
@@ -134,7 +189,7 @@ module mul_store  #(
        (
         // PORT A
         .addra(shifted_addra),
-        .dina(low_in), 
+        .dina(low_in_used), 
         .clka(clk_in),
         .wea(write_on && !(store_states == cleaning) && !(store_states == outputing)), 
         .ena(1'b1),

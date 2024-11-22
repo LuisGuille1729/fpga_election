@@ -21,7 +21,7 @@ module bram_blocks_rw #(
 // Counter of Read Address (increments every read_next_block_valid_in)
 logic [$clog2(NUM_BLOCKS)-1:0] address_of_read_block;
 evt_counter #(.MAX_COUNT(NUM_BLOCKS))
- write_address_counter
+ read_address_counter
 (  
     .clk_in(clk_in),
     .rst_in(rst_in),
@@ -83,4 +83,4 @@ bram
 
 endmodule
 
-`default_ne
+`default_nettype wire
