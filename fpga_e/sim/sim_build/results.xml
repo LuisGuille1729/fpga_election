@@ -1,6 +1,6 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1732074426" />
-    <testcase name="first_test" classname="test_modulo_of_power" file="/Users/turino14/6205/secure_election/fpga_e/sim/test_modulo_of_power.py" lineno="26" time="0.05221295356750488" sim_time_ns="13130.001" ratio_time="251470.18321850986" />
+    <property name="random_seed" value="1732307511" />
+    <testcase name="first_test" classname="test_right_shifter" file="/Users/turino14/6205/secure_election/fpga_e/sim/test_right_shifter.py" lineno="26" time="0.044725894927978516" sim_time_ns="10530.001" ratio_time="235434.10404545988" />
   </testsuite>
 </testsuites>
