@@ -17,7 +17,7 @@ async def send(dut, block_value):
     await ClockCycles(dut.clk_in, 1)
     
     
-async def delay(dut, time, addRandomDelay=False):
+async def delay(dut, time, addRandomDelay=True):
     dut.valid_in.value = 0
     await ClockCycles(dut.clk_in, time)
     if addRandomDelay:
@@ -54,6 +54,7 @@ async def first_test(dut):
             
         await delay(dut, 1)
 
+    await delay(dut, 1)
     assert dut.valid_out.value == 0 
 
     # Send again!
@@ -69,6 +70,7 @@ async def first_test(dut):
             
         await delay(dut, 1)
 
+    await delay(dut, 1)
     assert dut.valid_out.value == 0 
     
     
