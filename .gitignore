@@ -1,2 +1,4 @@
 *.rpt
 __pycache__
+_history
+sim_build
