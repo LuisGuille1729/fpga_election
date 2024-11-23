@@ -7,9 +7,10 @@ module bram_blocks_rw #(
     input wire clk_in,
     input wire rst_in,
 
-    input wire [REGISTER_SIZE-1:0] read_next_block_valid_in, 
-    output logic read_block_out,
+    input wire read_next_block_valid_in, 
+    output logic [REGISTER_SIZE-1:0] read_block_out,
     output logic read_block_pipe2_valid_out,
+    output logic read_done_all_blocks_out, // pipelined as well
     
     input wire write_next_block_valid_in,
     input wire [REGISTER_SIZE-1:0] write_block_in
@@ -20,7 +21,9 @@ module bram_blocks_rw #(
 
 // Counter of Read Address (increments every read_next_block_valid_in)
 logic [$clog2(NUM_BLOCKS)-1:0] address_of_read_block;
-evt_counter #(.MAX_COUNT(NUM_BLOCKS))
+evt_counter #(
+    .MAX_COUNT(NUM_BLOCKS),
+    .COUNT_START(0))
  read_address_counter
 (  
     .clk_in(clk_in),
@@ -31,7 +34,9 @@ evt_counter #(.MAX_COUNT(NUM_BLOCKS))
 
 // Counter of Write Address (increments every write_next_block_valid_in)
 logic [$clog2(NUM_BLOCKS)-1:0] address_of_write_block;
-evt_counter #(.MAX_COUNT(NUM_BLOCKS))
+evt_counter #(
+    .MAX_COUNT(NUM_BLOCKS),
+    .COUNT_START(0))
  write_address_counter
 (  
     .clk_in(clk_in),
@@ -41,13 +46,17 @@ evt_counter #(.MAX_COUNT(NUM_BLOCKS))
 );
 
 logic valid_pipe1;
+logic read_all_pipe1;
 always_ff @( posedge clk_in ) begin
     if (rst_in) begin
-        address_of_read_block <= 0;
-        address_of_write_block <= 0;
+        read_done_all_blocks_out <= 0;
     end else begin
         valid_pipe1 <= read_next_block_valid_in;
         read_block_pipe2_valid_out <= valid_pipe1;  // give signal when read value has been obtained
+        
+        read_all_pipe1 <= address_of_read_block == (NUM_BLOCKS-1);
+        read_done_all_blocks_out <= read_all_pipe1;
+
     end
 
 end
@@ -72,7 +81,7 @@ bram
     .addrb(address_of_write_block),
     .dinb(write_block_in),
     .clkb(clk_in),
-    .web(1'b1), // write always
+    .web(write_next_block_valid_in), // write always, NOTE cannot just do 1'b1
     .enb(1'b1),
     .rstb(rst_in),
     .regceb(1'b1),
