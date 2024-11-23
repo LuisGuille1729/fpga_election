@@ -40,8 +40,11 @@ async def comparison_test(dut, A, B):
         A = A >> 32
         B = B >> 32
         
+        if count != 127:
+            assert dut.end_comparison_out.value == 0
         assert dut.block_count.value == count    
     
+    assert dut.end_comparison_out.value == 1
     assert int(dut.comparison_result_out.value) == expected
  
 @cocotb.test()
@@ -81,8 +84,10 @@ async def first_test(dut):
         assert dut.block_count.value == count    
         count += 1
     
+    assert dut.end_comparison_out.value == 1
     await delay(dut, 1, addRandomDelay=False)
     assert dut.comparison_result_out.value == 0
+    assert dut.end_comparison_out.value == 0
     await delay(dut, 10, addRandomDelay=False) 
     
     #### Test A LESS THAN B ####
@@ -103,6 +108,7 @@ async def first_test(dut):
         assert dut.block_count.value == count    
         count += 1
     
+    assert dut.end_comparison_out.value == 1
     assert dut.comparison_result_out.value == 0b01
     await delay(dut, 1, addRandomDelay=False)
     assert dut.comparison_result_out.value == 0
@@ -126,6 +132,7 @@ async def first_test(dut):
         assert dut.block_count.value == count    
         count += 1
     
+    assert dut.end_comparison_out.value == 1
     assert dut.comparison_result_out.value == 0b10
     await delay(dut, 1, addRandomDelay=False)
     assert dut.comparison_result_out.value == 0
