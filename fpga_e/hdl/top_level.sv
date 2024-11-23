@@ -9,6 +9,7 @@ module top_level
 
   logic   sys_rst;
   assign sys_rst = btn[0];
+  logic start;
   assign start = btn[1];
 
 

@@ -179,12 +179,13 @@ adder_T_plus_mN
 
 
 always_ff @(posedge clk_in) begin
-    if (!rst_in) begin
+    if (rst_in) 
+        read_next_block_valid_in <= 0;
+    else
         read_next_T_block_valid <= product_Mn_valid; // Request next T block for adder 
         // Will update product_Mn_valid after two cycles.
         // (there's a two cycle delay, but should be fast enough compared to the multiplier)
         // (if not, then look into pipelining it)
-    end
 end
 
 logic final_carry;
@@ -212,10 +213,10 @@ rshift_T_mN_byR
 );
 
 //rename
-logic t_block_valid;
-assign t_block_valid = rshift_T_mN_byR_valid;
-logic [REGISTER_SIZE-1:0] t_block_value;
-assign t_block_value = rshift_T_mN_byR_block;
+logic t_result_block_valid;
+assign t_result_block_valid = rshift_T_mN_byR_valid;
+logic [REGISTER_SIZE-1:0] t_result_block_value;
+assign t_result_block_value = rshift_T_mN_byR_block;
 
 //*** Output (t < N) ? t : N-t (this output will be equivalent to T%N) ***//
 
@@ -230,10 +231,37 @@ assign t_block_value = rshift_T_mN_byR_block;
 // maybe there's a workaround? 
 
 
+// Store the results of rshift_T_mN_byR
+// Will be needed for output once the comparison is determined.
+// NOTE FOR FUTURE: Can optimize by reusing the T_blocks_BRAM for this purpose.
+// If done so, be careful that it does not break anything with top-level due to timing (it shouldn't)
+logic read_next_t_result_block_valid;
+logic [REGISTER_SIZE-1:0] read_t_result_block_value;
+logic read_t_result_block_value_valid;
+
+bram_blocks_rw #(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_BLOCKS)
+) 
+t_result_blocks_BRAM
+(
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+
+    // Write t_result
+    .write_next_block_valid_in(t_result_block_valid),   
+    .write_block_in(t_result_block_value),
+
+    // Read T (needed for later)
+    .read_next_block_valid_in(read_next_t_result_block_valid), 
+    .read_block_out(read_t_result_block_value),
+    .read_block_pipe2_valid_out(read_t_result_block_value_valid)
+);
+
 
 
 
 
 endmodule
 
-`default_ne
+`default_nettype wire

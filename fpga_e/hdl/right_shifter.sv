@@ -40,4 +40,4 @@ end
 
 endmodule
 
-`default_ne
+`default_nettype wire
