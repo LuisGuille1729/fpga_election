@@ -143,12 +143,11 @@ multiplier_m_times_N
     .valid_out(product_Mn_valid)
 );
 
-always_ff @( posedge clk_in ) begin
-    if (sys_rst)
-        consumed_N_out <= 0;
-    else
-        consumed_N_out <= product_Tk_modR_valid; // request next N block for the multiplier
-end
+// (The following is assigned after the comparator)
+//         // request next N block for the MULTIPLIER
+//         // or for the COMPARATOR
+//         consumed_N_out <= product_Tk_modR_valid || t_result_block_valid; 
+
 
 // Adder T + mN
 logic addition_T_mN_result_valid;
@@ -218,7 +217,7 @@ assign t_result_block_valid = rshift_T_mN_byR_valid;
 logic [REGISTER_SIZE-1:0] t_result_block_value;
 assign t_result_block_value = rshift_T_mN_byR_block;
 
-//*** Output (t < N) ? t : N-t (this output will be equivalent to T%N) ***//
+//*** Now output (t < N) ? t : N-t (this output will be equivalent to T%N) ***//
 
 // Idea:
 // new module for comparison,
@@ -248,18 +247,52 @@ t_result_blocks_BRAM
     .clk_in(clk_in),
     .rst_in(rst_in),
 
-    // Write t_result
+    // WRITE t_result
     .write_next_block_valid_in(t_result_block_valid),   
     .write_block_in(t_result_block_value),
 
-    // Read T (needed for later)
+    // READ t_result
     .read_next_block_valid_in(read_next_t_result_block_valid), 
     .read_block_out(read_t_result_block_value),
     .read_block_pipe2_valid_out(read_t_result_block_value_valid)
 );
 
+// Compare t < N
 
+logic comparison_done;
+logic [1:0] comparison_result; 
+    // comparison_result is:
+    // 00 - NULL
+    // 01 - A less than B
+    // 10 - A greater than B
+    // 11 - A equals B
 
+running_comparator #(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_BLOCKS/2)   // 2048 bits comparison
+)
+compare_t_with_N (
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+
+    .valid_in(t_result_block_valid),
+    .block_numA_in(t_result_block_value),  
+
+    .block_numB_in(modN_constant_block_in),
+
+    .comparison_result(comparison_result)
+)
+
+always_ff @( posedge clk_in ) begin
+    if (sys_rst)
+        consumed_N_out <= 0;
+    else
+        // request next N block for the MULTIPLIER
+        // or for the COMPARATOR
+        consumed_N_out <= product_Tk_modR_valid || t_result_block_valid; 
+end
+
+final_carry;
 
 
 endmodule

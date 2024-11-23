@@ -20,7 +20,7 @@ async def send(dut, block_value):
 async def delay(dut, time):
     dut.valid_in.value = 0
     await ClockCycles(dut.clk_in, time)
-    await ClockCycles(dut.clk_in, random.randint(0, 1))
+    # await ClockCycles(dut.clk_in, random.randint(0, 1))
     # assert dut.valid_out.value == 0
  
 @cocotb.test()
