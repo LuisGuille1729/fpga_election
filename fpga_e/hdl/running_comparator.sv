@@ -19,7 +19,7 @@ module running_comparator #(
     // 10 - A greater than B
     // 11 - A equals B
     output logic [1:0] comparison_result_out,
-    output logic end_comparison_out
+    output logic end_comparison_signal_out
 );
 
     // Note: See lucid-chart for FSM diagram
@@ -28,7 +28,7 @@ module running_comparator #(
 
     logic [$clog2(NUM_BLOCKS)-1:0] block_count;
 
-    assign end_comparison_out = (block_count == NUM_BLOCKS-1) ? 1 : 0;
+    assign end_comparison_signal_out = (block_count == NUM_BLOCKS-1) ? 1 : 0;
 
     always_comb begin : determine_result
        case (state)
