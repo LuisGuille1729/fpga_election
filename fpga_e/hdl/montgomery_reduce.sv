@@ -25,6 +25,7 @@ module montgomery_reduce #(
 
 localparam T_TOTAL_SIZE = REGISTER_SIZE*NUM_BLOCKS;
 localparam CONSTANT_SIZE = R;
+localparam NUM_BLOCKS_OUTPUT = NUM_BLOCKS/2;
 
 
 // Store T for later use in adder (T + mN)
@@ -143,7 +144,7 @@ multiplier_m_times_N
     .valid_out(product_Mn_valid)
 );
 
-// (The following is assigned after the comparator)
+// (The following is assigned in the always_ff after the comparator)
 //         // request next N block for the MULTIPLIER
 //         // or for the COMPARATOR
 //         consumed_N_out <= product_Tk_modR_valid || t_result_block_valid; 
@@ -188,7 +189,8 @@ always_ff @(posedge clk_in) begin
 end
 
 logic final_carry;
-assign final_carry = (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
+// (The following is assigned in the always_ff after the comparator)
+// final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
 
 
 // Right Shift T+mN by R    (result will be t := (T + mN)>>R )
@@ -217,7 +219,7 @@ assign t_result_block_valid = rshift_T_mN_byR_valid;
 logic [REGISTER_SIZE-1:0] t_result_block_value;
 assign t_result_block_value = rshift_T_mN_byR_block;
 
-//*** Now output (t < N) ? t : N-t (this output will be equivalent to T%N) ***//
+//*** Now output (t < N) ? t : t-N (this output will be equivalent to T%N) ***//
 
 // Idea:
 // new module for comparison,
@@ -237,10 +239,11 @@ assign t_result_block_value = rshift_T_mN_byR_block;
 logic read_next_t_result_block_valid;
 logic [REGISTER_SIZE-1:0] read_t_result_block_value;
 logic read_t_result_block_value_valid;
+logic all_t_blocks_read;
 
 bram_blocks_rw #(
     .REGISTER_SIZE(REGISTER_SIZE),
-    .NUM_BLOCKS(NUM_BLOCKS)
+    .NUM_BLOCKS(NUM_BLOCKS_OUTPUT) // i.e. 4096 bits
 ) 
 t_result_blocks_BRAM
 (
@@ -254,7 +257,8 @@ t_result_blocks_BRAM
     // READ t_result
     .read_next_block_valid_in(read_next_t_result_block_valid), 
     .read_block_out(read_t_result_block_value),
-    .read_block_pipe2_valid_out(read_t_result_block_value_valid)
+    .read_block_pipe2_valid_out(read_t_result_block_value_valid),
+    .read_done_all_blocks_out(all_t_blocks_read)
 );
 
 // Compare t < N
@@ -269,7 +273,7 @@ logic [1:0] comparison_result;
 
 running_comparator #(
     .REGISTER_SIZE(REGISTER_SIZE),
-    .NUM_BLOCKS(NUM_BLOCKS/2)   // 2048 bits comparison
+    .NUM_BLOCKS(NUM_BLOCKS_OUTPUT)   // 4096 bits comparison
 )
 compare_t_with_N (
     .clk_in(clk_in),
@@ -280,19 +284,87 @@ compare_t_with_N (
 
     .block_numB_in(modN_constant_block_in),
 
-    .comparison_result(comparison_result)
-)
+    .comparison_result(comparison_result),
+    .end_comparison_signal_out(comparison_done) //(this is always a single cycle signal)
+);
+
+logic dispatch_output;
+logic is_t_less_than_N; // used to determine which to output (t or t-N)
 
 always_ff @( posedge clk_in ) begin
-    if (sys_rst)
+    if (sys_rst) begin
         consumed_N_out <= 0;
-    else
+        valid_out <= 0;
+    end else begin
         // request next N block for the MULTIPLIER
-        // or for the COMPARATOR
-        consumed_N_out <= product_Tk_modR_valid || t_result_block_valid; 
+        // OR for the COMPARATOR
+        // OR for the t-N SUBTRACTION
+        consumed_N_out <= product_Tk_modR_valid || t_result_block_valid || read_t_result_block_value_valid; 
+
+        // Recall the final carry from the addition, will be needed to determine true comparison.
+        final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
+
+
+        // Determine whether to output t or t-N
+        if (comparison_done) begin
+            dispatch_output <= 1;
+            // note if final_carry is 1, then immediately t > N
+            if (!final_carry && comparison_result == 2'b01) // t < N
+                is_t_less_than_N <= 1;
+            else 
+                is_t_less_than_N <= 0;
+
+        end
+        else if (all_t_blocks_read) begin
+            dispatch_output <= 0;   // stop outputting t_result blocks
+        end
+
+        if (read_t_result_block_value_valid) begin
+            
+            valid_out <= 1;
+            if (is_t_less_than_N) begin
+
+                data_block_out <= read_t_result_block_value;
+
+            end else begin // t >= N, so output t - N instead
+
+                data_block_out <= t_minus_N_block_result;
+
+            end
+
+
+        end else begin
+            valid_out <= 0;
+
+        end
+
+    end
 end
 
-final_carry;
+assign read_next_t_result_block_valid = dispatch_output; // will start outputting the t_result blocks into read_t_result_block_value every cycle
+
+logic [REGISTER_SIZE-1:0] t_minus_N_block_result;
+// Calculate t-N:
+great_subtractor #(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .BITS_IN_NUM(NUM_BLOCKS_OUTPUT*REGISTER_SIZE)
+)
+subtract_t_minus_N
+(
+    .a_in(read_t_result_block_value),
+    .b_in(modN_constant_block_in),
+    .valid_in(read_t_result_block_value_valid),
+
+    .rst_in(rst_in),
+    .clk_in(clk_in),
+
+    .data_out(t_minus_N_block_result),
+    .valid_out(),
+    .final_out()
+);
+
+
+
 
 
 endmodule

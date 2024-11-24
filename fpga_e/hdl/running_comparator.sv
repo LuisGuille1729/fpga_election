@@ -72,11 +72,9 @@ module running_comparator #(
         if (rst_in || block_count == NUM_BLOCKS-1) begin
             state <= IDLE;
             block_count <= 0;
-            // end_comparison_out <= 0;
         end else if (valid_in) begin 
             state <= comparison_result_out; // update state
             block_count <= block_count + 1;
-            // end_comparison_out <= (block_count == NUM_BLOCKS-2) ? 1 : 0;
         end
 
     end
