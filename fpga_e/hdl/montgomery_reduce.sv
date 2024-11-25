@@ -225,7 +225,9 @@ assign read_next_T_block_valid = product_Mn_valid;
 logic final_carry;
 // (The following is assigned in the always_ff after the comparator)
 // final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
-
+// Update: that ^^^ is actually a bug, since addition_T_mN_done occurs simulatneously with comparison_done
+// instead just do:
+assign final_carry = addition_T_mN_block_carry;
 
 // Right Shift T+mN by R    (result will be t := (T + mN)>>R )
 logic rshift_T_mN_byR_valid;
@@ -332,7 +334,7 @@ always_ff @( posedge clk_in ) begin
     if (rst_in) begin
         // consumed_N_out <= 0;
         valid_out <= 0;
-        final_carry <= 0;
+        // final_carry <= 0;
         dispatch_output <= 0;
         is_t_less_than_N <= 0;
         data_block_out <= 0;
@@ -343,8 +345,9 @@ always_ff @( posedge clk_in ) begin
         // consumed_N_out <= product_Tk_modR_valid || t_result_block_valid || read_t_result_block_value_valid; 
 
         // Recall the final carry from the addition, will be needed to determine true comparison.
-        final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
-
+        // final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
+        // However, addition_T_mN_done and comparison_done occur simultaneously! This breaks a cycle
+        // Instead just use addition_T_mN_block_carry.
 
         // Determine whether to output t or t-N
         if (comparison_done) begin
