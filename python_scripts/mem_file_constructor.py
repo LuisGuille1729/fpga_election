@@ -50,7 +50,7 @@ def write_mem_data(filename: str, data_width: int, partition_width: int, depth: 
             # write in hex the top partition_width bits
             while len(nb) > 0:
                 cur_depth += 1
-                f.write(f"{int(nb[0:partition_width], 2): 0{hex_digits_per_partition}x}") 
+                f.write(f"{int(nb[0:partition_width], 2):0{hex_digits_per_partition}x}") 
                 if cur_depth != depth:
                     f.write("\n")
                 nb = nb[partition_width:]   # remove the top bits
