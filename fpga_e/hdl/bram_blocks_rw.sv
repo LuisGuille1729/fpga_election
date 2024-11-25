@@ -10,7 +10,7 @@ module bram_blocks_rw #(
     input wire read_next_block_valid_in, 
     output logic [REGISTER_SIZE-1:0] read_block_out,
     output logic read_block_pipe2_valid_out,
-    output logic read_done_all_blocks_out, // pipelined as well
+    output logic read_done_all_blocks_pipe2_out, // pipelined as well
     output logic read_requested_for_last_block, // unpiped
     
     input wire write_next_block_valid_in,
@@ -56,14 +56,14 @@ always_ff @( posedge clk_in ) begin
         read_block_pipe2_valid_out <= 0;
 
         read_all_pipe1 <= 0;
-        read_done_all_blocks_out <= 0;
+        read_done_all_blocks_pipe2_out <= 0;
 
     end else begin
         valid_pipe1 <= read_next_block_valid_in;
         read_block_pipe2_valid_out <= valid_pipe1;  // give signal when read value has been obtained
         
         read_all_pipe1 <= address_of_read_block == (NUM_BLOCKS-1);
-        read_done_all_blocks_out <= read_all_pipe1;
+        read_done_all_blocks_pipe2_out <= read_all_pipe1;
 
     end
 

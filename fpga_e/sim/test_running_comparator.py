@@ -23,6 +23,9 @@ async def delay(dut, time, addRandomDelay=False):
     if addRandomDelay:
         await ClockCycles(dut.clk_in, random.randint(0, 1))
  
+REGISTER_SIZE = 32
+NUM_BLOCKS = 4096//REGISTER_SIZE
+ 
 async def comparison_test(dut, A, B):
     print(f"Compare: A is {A.bit_length()}-bits, B is {B.bit_length()}-bits.")
     if (A == B):
@@ -33,14 +36,14 @@ async def comparison_test(dut, A, B):
         expected = 0b10
     
     
-    for count in range(128):
-        A_in = A & (0xFFFF_FFFF)
-        B_in = B & (0xFFFF_FFFF)
+    for count in range(NUM_BLOCKS):
+        A_in = A & (2**REGISTER_SIZE -1)
+        B_in = B & (2**REGISTER_SIZE -1)
         await send(dut, A_in, B_in)
-        A = A >> 32
-        B = B >> 32
+        A = A >> REGISTER_SIZE
+        B = B >> REGISTER_SIZE
         
-        if count != 127:
+        if count != NUM_BLOCKS-1:
             assert dut.end_comparison_signal_out.value == 0
         assert dut.block_count.value == count    
     
@@ -73,9 +76,9 @@ async def first_test(dut):
     
     count = 0
     while A != 0:
-        A_in = A & (0xFFFF_FFFF)
+        A_in = A & (2**REGISTER_SIZE-1)
         await send(dut, A_in, A_in)
-        A = A >> 32
+        A = A >> REGISTER_SIZE
         # B = B >> 32
         
         assert dut.comparison_result_out.value == 0b11
@@ -97,11 +100,11 @@ async def first_test(dut):
     
     count = 0
     while A != 0:
-        A_in = A & (0xFFFF_FFFF)
-        B_in = B & (0xFFFF_FFFF)
+        A_in = A & (2**REGISTER_SIZE-1)
+        B_in = B & (2**REGISTER_SIZE-1)
         await send(dut, A_in, B_in)
-        A = A >> 32
-        B = B >> 32
+        A = A >> REGISTER_SIZE
+        B = B >> REGISTER_SIZE
         
         
         print(count)
@@ -121,11 +124,11 @@ async def first_test(dut):
     
     count = 0
     while A != 0:
-        A_in = A & (0xFFFF_FFFF)
-        B_in = B & (0xFFFF_FFFF)
+        A_in = A & (2**REGISTER_SIZE-1)
+        B_in = B & (2**REGISTER_SIZE-1)
         await send(dut, A_in, B_in)
-        A = A >> 32
-        B = B >> 32
+        A = A >> REGISTER_SIZE
+        B = B >> REGISTER_SIZE
         
         
         print(count)
@@ -164,7 +167,7 @@ def test_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [proj_path / "hdl" / "running_comparator.sv"] #grow/modify this as needed.
     build_test_args = ["-Wall"]#,"COCOTB_RESOLVE_X=ZEROS"]
-    parameters = {}
+    parameters = {"REGISTER_SIZE": REGISTER_SIZE, "NUM_BLOCKS": NUM_BLOCKS}
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(

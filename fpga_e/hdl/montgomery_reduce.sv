@@ -294,7 +294,7 @@ t_result_blocks_BRAM
     .read_next_block_valid_in(read_next_t_result_block_valid), 
     .read_block_out(read_t_result_block_value),
     .read_block_pipe2_valid_out(read_t_result_block_value_valid),
-    .read_done_all_blocks_out(),
+    .read_done_all_blocks_pipe2_out(),
     .read_requested_for_last_block(all_t_blocks_read)
 );
 

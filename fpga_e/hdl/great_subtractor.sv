@@ -19,7 +19,7 @@ module great_subtractor  #(
     // In future can easily update to allow general subtraction 
 
 
-    logic [31:0] b_complementary;
+    logic [REGISTER_SIZE-1:0] b_complementary;
     assign b_complementary = ~b_in;
 
     // logic sign;
