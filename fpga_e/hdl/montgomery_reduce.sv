@@ -1,6 +1,9 @@
 `default_nettype none
 
 // Efficiently calculates T(R^-1) mod N
+// NOTE: k_constant_block_in and modN_constant_block_in MUST behave as expected in top level:
+// Must be initialized to first block whenever valid_in is 1
+// Every time a consumed signal is outputted, in the NEXT cycle give the next block
 module montgomery_reduce #(
     parameter REGISTER_SIZE = 32,
     parameter NUM_BLOCKS = 256,
@@ -12,14 +15,15 @@ module montgomery_reduce #(
     input wire valid_in,
     input wire [REGISTER_SIZE-1:0] T_block_in,   // the number we want to reduce
     
-    input wire [REGISTER_SIZE-1:0] k_constant_block_in, 
+    input wire [REGISTER_SIZE-1:0] k_constant_block_in, // we implement in top level so k_constant_block_in is initialized to the first block and increments when consumed_k is set to 1
     output logic consumed_k_out,
     
     input wire [REGISTER_SIZE-1:0] modN_constant_block_in,
     output logic consumed_N_out,
 
     output logic valid_out,
-    output logic [REGISTER_SIZE-1:0] data_block_out
+    output logic [REGISTER_SIZE-1:0] data_block_out,
+    output logic final_out
 );
 // For most use cases, modN_constant_block_in will be our n_squared
 
@@ -288,7 +292,8 @@ t_result_blocks_BRAM
     .read_next_block_valid_in(read_next_t_result_block_valid), 
     .read_block_out(read_t_result_block_value),
     .read_block_pipe2_valid_out(read_t_result_block_value_valid),
-    .read_done_all_blocks_out(all_t_blocks_read)
+    .read_done_all_blocks_out(),
+    .read_requested_for_last_block(all_t_blocks_read)
 );
 
 // Compare t < N
@@ -376,6 +381,8 @@ always_ff @( posedge clk_in ) begin
 
     end
 end
+
+assign final_out = valid_out & !read_t_result_block_value_valid; 
 
 assign read_next_t_result_block_valid = dispatch_output; // will start outputting the t_result blocks into read_t_result_block_value every cycle
 

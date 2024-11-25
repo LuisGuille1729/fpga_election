@@ -11,6 +11,7 @@ module bram_blocks_rw #(
     output logic [REGISTER_SIZE-1:0] read_block_out,
     output logic read_block_pipe2_valid_out,
     output logic read_done_all_blocks_out, // pipelined as well
+    output logic read_requested_for_last_block, // unpiped
     
     input wire write_next_block_valid_in,
     input wire [REGISTER_SIZE-1:0] write_block_in
@@ -44,6 +45,8 @@ evt_counter #(
     .evt_in(write_next_block_valid_in),
     .count_out(address_of_write_block)
 );
+
+assign read_requested_for_last_block = address_of_read_block == (NUM_BLOCKS-1);
 
 logic valid_pipe1;
 logic read_all_pipe1;
