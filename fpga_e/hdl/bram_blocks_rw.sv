@@ -48,8 +48,13 @@ evt_counter #(
 logic valid_pipe1;
 logic read_all_pipe1;
 always_ff @( posedge clk_in ) begin
-    if (rst_in) begin
+    if (rst_in) begin        
+        valid_pipe1 <= 0;
+        read_block_pipe2_valid_out <= 0;
+
+        read_all_pipe1 <= 0;
         read_done_all_blocks_out <= 0;
+
     end else begin
         valid_pipe1 <= read_next_block_valid_in;
         read_block_pipe2_valid_out <= valid_pipe1;  // give signal when read value has been obtained

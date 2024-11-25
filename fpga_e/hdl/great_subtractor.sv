@@ -22,7 +22,7 @@ module great_subtractor  #(
     logic [31:0] b_complementary;
     assign b_complementary = ~b_in;
 
-    logic sign;
+    // logic sign;
 
     great_adder #(
     .REGISTER_SIZE(REGISTER_SIZE),
@@ -46,7 +46,7 @@ module great_subtractor  #(
 
 );
 
-assign sign_out = ~sign;
+// assign sign_out = ~sign;
 
 
 endmodule

@@ -18,8 +18,8 @@ module montgomery_reduce #(
     input wire [REGISTER_SIZE-1:0] modN_constant_block_in,
     output logic consumed_N_out,
 
-    output valid_out,
-    output data_block_out
+    output logic valid_out,
+    output logic [REGISTER_SIZE-1:0] data_block_out
 );
 // For most use cases, modN_constant_block_in will be our n_squared
 
@@ -95,12 +95,13 @@ multiplier_TmodR_times_k
     .valid_out(Tk_product_valid)
 );
 
-always_ff @( posedge clk_in ) begin
-    if (sys_rst)
-        consumed_k_out <= 0;
-    else
-        consumed_k_out <= T_modR_valid; // request next k block for the multiplier
-end
+// always_ff @( posedge clk_in ) begin
+//     if (rst_in)
+//         consumed_k_out <= 0;
+//     else
+//         consumed_k_out <= T_modR_valid; // request next k block for the multiplier
+// end
+assign consumed_k_out = T_modR_valid; // Must be combinational!
 
 // Tk mod R     (result will be m := (T%R)k %R)
 logic product_Tk_modR_valid;
@@ -116,7 +117,7 @@ modulo_of_power #(
     .rst_in(rst_in),
 
     .valid_in(Tk_product_valid),
-    .block_in(Tk_product_valid),
+    .block_in(Tk_product_block_value),
 
     .valid_out(product_Tk_modR_valid),
     .data_block_out(product_Tk_modR_block)
@@ -156,17 +157,45 @@ logic [REGISTER_SIZE-1:0] addition_T_mN_block;
 logic addition_T_mN_block_carry;
 logic addition_T_mN_done;
 
+// Need to pipeline in order to correspond to the T output from BRAM
+logic [REGISTER_SIZE-1:0] product_Mn_block_piped;
+pipeliner #(
+    .PIPELINE_STAGE_COUNT(2),
+    .DATA_BIT_SIZE(REGISTER_SIZE)
+)
+product_Mn_block_pipeline
+(
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+    .data_in(product_Mn_block),
+    .data_out(product_Mn_block_piped)
+);
+
+logic [REGISTER_SIZE-1:0] product_Mn_valid_piped;
+pipeliner #(
+    .PIPELINE_STAGE_COUNT(2),
+    .DATA_BIT_SIZE(REGISTER_SIZE)
+)
+product_Mn_valid_pipeline
+(
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+    .data_in(product_Mn_valid),
+    .data_out(product_Mn_valid_piped)
+);
+
+
 great_adder #(
     .REGISTER_SIZE(REGISTER_SIZE),
     .BITS_IN_NUM(T_TOTAL_SIZE)  // 8192
 )
 adder_T_plus_mN
 (
-    .a_in(product_Mn_block),
+    .a_in(product_Mn_block_piped), // need to be pipelined by 2 cycles!!!
     .b_in(read_T_block_value),  // from BRAM
     .carry_in(1'b0),
     
-    .valid_in(product_Mn_valid),
+    .valid_in(product_Mn_valid_piped), // need to be pipelined by 2 cycles!!!
 
     .rst_in(rst_in),
     .clk_in(clk_in),
@@ -178,15 +207,16 @@ adder_T_plus_mN
 );
 
 
-always_ff @(posedge clk_in) begin
-    if (rst_in) 
-        read_next_block_valid_in <= 0;
-    else
-        read_next_T_block_valid <= product_Mn_valid; // Request next T block for adder 
-        // Will update product_Mn_valid after two cycles.
-        // (there's a two cycle delay, but should be fast enough compared to the multiplier)
-        // (if not, then look into pipelining it)
-end
+// always_ff @(posedge clk_in) begin
+//     if (rst_in) 
+//         read_next_T_block_valid <= 0;
+//     else
+//         read_next_T_block_valid <= product_Mn_valid; // Request next T block for adder 
+//         // Will update product_Mn_valid after two cycles.
+//         // (there's a two cycle delay, but should be fast enough compared to the multiplier)
+//         // (if not, then look into pipelining it)
+// end
+assign read_next_T_block_valid = product_Mn_valid;
 
 logic final_carry;
 // (The following is assigned in the always_ff after the comparator)
@@ -206,7 +236,7 @@ rshift_T_mN_byR
     .clk_in(clk_in),
     .rst_in(rst_in),
 
-    .valid_in(addition_T_mN_valid),
+    .valid_in(addition_T_mN_result_valid),
     .block_in(addition_T_mN_block),
     
     .valid_out(rshift_T_mN_byR_valid),
@@ -284,22 +314,28 @@ compare_t_with_N (
 
     .block_numB_in(modN_constant_block_in),
 
-    .comparison_result(comparison_result),
+    .comparison_result_out(comparison_result),
     .end_comparison_signal_out(comparison_done) //(this is always a single cycle signal)
 );
 
 logic dispatch_output;
 logic is_t_less_than_N; // used to determine which to output (t or t-N)
 
+assign consumed_N_out = product_Tk_modR_valid || t_result_block_valid || read_t_result_block_value_valid; 
+
 always_ff @( posedge clk_in ) begin
-    if (sys_rst) begin
-        consumed_N_out <= 0;
+    if (rst_in) begin
+        // consumed_N_out <= 0;
         valid_out <= 0;
+        final_carry <= 0;
+        dispatch_output <= 0;
+        is_t_less_than_N <= 0;
+        data_block_out <= 0;
     end else begin
         // request next N block for the MULTIPLIER
         // OR for the COMPARATOR
         // OR for the t-N SUBTRACTION
-        consumed_N_out <= product_Tk_modR_valid || t_result_block_valid || read_t_result_block_value_valid; 
+        // consumed_N_out <= product_Tk_modR_valid || t_result_block_valid || read_t_result_block_value_valid; 
 
         // Recall the final carry from the addition, will be needed to determine true comparison.
         final_carry <= (addition_T_mN_done) ? addition_T_mN_block_carry : final_carry;
