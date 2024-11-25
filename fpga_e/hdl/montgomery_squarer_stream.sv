@@ -28,11 +28,14 @@ module montgomery_squarer_stream #(
     logic [$clog2(NUM_BLOCKS)-1:0] block_ctr;
     logic [$clog2(HIGHEST_EXPONENT)-1:0] square_exponent_ctr;
     logic [REGISTER_SIZE-1:0] squared_modulo_block;
+    logic valid_data;
     logic initial_state;
 
+    assign valid_data = (data_valid_in & initial_state) | reducer_valid_out;
     assign squared_modulo_block = data_valid_in ? reduced_modulo_block_in : reducer_block_out;
+
     assign reduced_square_out = rst_in ? 0 : squared_modulo_block;
-    // assign valid_out = rst_in ? 0 : (data_valid_in & initial_state) | reducer_valid_out;  // TODO - Keep initial_state as a bit rather than enum?
+    assign squared_valid_out = rst_in ? 0 : valid_data;  // TODO - Keep initial_state as a bit rather than enum?
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -40,11 +43,11 @@ module montgomery_squarer_stream #(
             block_ctr <= 0;
             square_exponent_ctr <= 0;
 
-            squared_valid_out <= 0;
+            // squared_valid_out <= 0;
             ready_out <= 1;
         end
         else if ((data_valid_in & initial_state) | reducer_valid_out) begin
-            squared_valid_out <= 1;
+            // squared_valid_out <= 1;
             if (block_ctr == NUM_BLOCKS - 1) begin
                 block_ctr <= 0;
                 square_exponent_ctr <= (square_exponent_ctr == HIGHEST_EXPONENT - 1) ? 0 : square_exponent_ctr + 1;
@@ -65,7 +68,7 @@ module montgomery_squarer_stream #(
             end
         end
         else begin
-            squared_valid_out <= 0;
+            // squared_valid_out <= 0;
             ready_out <= 0;
         end
     end
@@ -74,11 +77,12 @@ module montgomery_squarer_stream #(
     logic [REGISTER_SIZE-1:0] multiplier_block_out;
     fsm_multiplier #(
         .REGISTER_SIZE(REGISTER_SIZE),
-        .BITS_IN_NUM(BITS_IN_NUM)
+        .BITS_IN_NUM(BITS_IN_OUT)
     ) squarer_stream_multiplier (
-        .n_in(squared_modulo_block),
-        .m_in(squared_modulo_block),
-        .valid_in((initial_state & data_valid_in) | ((~initial_state) & reducer_valid_out)),
+        .n_in(reduced_square_out),
+        .m_in(reduced_square_out),
+        // .valid_in((initial_state & data_valid_in) | ((~initial_state) & reducer_valid_out)),
+        .valid_in(data_valid_in | (reducer_valid_out & ~ready_out)),  // Ready out is high when the squarer is done iterating and is awaiting a new input
         .rst_in(rst_in),
         .clk_in(clk_in),
         .data_out(multiplier_block_out),
