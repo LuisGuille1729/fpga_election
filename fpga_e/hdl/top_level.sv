@@ -13,11 +13,25 @@ module top_level
   assign sys_rst = btn[0];
   assign start = btn[1];
 
+  initial begin
+    
+  end  r_squared <=
+
+
   logic [31:0] rega;
   logic [31:0] regb;
   logic [31:0] regc;
+  logic [10:0] index;
   always_ff @( posedge clk_100mhz ) begin 
-    rega <= rega +1;
+    if (sys_rst) begin
+      index <= 0;
+      rega <= 0;
+      regb <= 0;
+      regc <= 0;
+    end
+    index <= index + 1; 
+    rega <= r_squared[31:0];
+    r_squared<= r_squared>>32;
     regb <= regb +2;
     regc <= regc +3;
   end
