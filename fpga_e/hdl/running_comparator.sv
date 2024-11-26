@@ -73,7 +73,17 @@ module running_comparator #(
             state <= IDLE;
             block_count <= 0;
         end else if (valid_in) begin 
-            state <= comparison_result_out; // update state
+            // state <= comparison_result_out; // update state, need to put in case because verilog is annoying
+            case (comparison_result_out)
+            IDLE: 
+                state <= IDLE;
+            A_LESS_THAN_B:
+                state <= A_LESS_THAN_B;
+            A_EQUAL_B:
+                state <= A_EQUAL_B;
+            A_GREATER_THAN_B:
+                state <= A_GREATER_THAN_B;
+            endcase
             block_count <= block_count + 1;
         end
 
