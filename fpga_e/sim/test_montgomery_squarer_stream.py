@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 import random
+import math
 
 from cocotb.clock import Clock
 from cocotb.triggers import Timer, ClockCycles, RisingEdge, FallingEdge, ReadOnly,ReadWrite,with_timeout, First, Join
@@ -48,11 +49,10 @@ async def NextValidMultiplierOut(dut, k_chunk_idx, N_chunk_idx, print_details=Fa
     k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx)
     ctr = 0
     while dut.multiplier_valid_out.value != 1:
+        assert ctr < MAX_CYCLES_BEFORE_DEADLOCK_DETECTED, "Never received an expected multiplier"
         if print_details:
             if (ctr % 10000) == 0:
-                print("In here 2!")
-            # if ctr == 40000:  # Uncomment if infinite loops
-            #     break
+                print("In here 1!")
         k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
         ctr += 1
     
@@ -66,17 +66,35 @@ async def NextValidReducerOut(dut, k_chunk_idx, N_chunk_idx, print_details=False
     k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
     ctr = 0
     while dut.reducer_valid_out.value != 1:
+        assert ctr < MAX_CYCLES_BEFORE_DEADLOCK_DETECTED, "Never received an expected reducer_valid_out"
         if print_details:
             if (ctr % 10000) == 0:
-                print("In here 3!")
-            # if ctr == 40000:  # Uncomment if infinite loops
-            #     break
+                print("In here 2!")
         k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
         ctr += 1
     
     return k_chunk_idx, N_chunk_idx
 
-async def drive_data(dut, reduced_modulo_block_in, k_chunk_idx, N_chunk_idx, print_details=False):
+async def drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details=False):
+    current_reduced_modulo_result = (a * R) % N  # Initial result
+    if print_details:
+        print(f"Initial result:\n{hex(current_reduced_modulo_result)}")
+    modulo_result_chunks_out = []  # Used to keep track of the chunks
+    if print_details:
+        print(f"NUM_BLOCKS_INTO_MULTIPLIER: {NUM_BLOCKS_INTO_MULTIPLIER}")
+    for i in range(NUM_BLOCKS_INTO_MULTIPLIER):
+        modulo_block_result = current_reduced_modulo_result & REGISTER_SIZE_ALL_ONES
+        modulo_result_chunks_out.append(modulo_block_result)
+        if print_details:
+            print("Appended result:", hex(modulo_block_result))
+        current_reduced_modulo_result = current_reduced_modulo_result >> REGISTER_SIZE
+        k_chunk_idx, N_chunk_idx = await drive_data_block(dut, modulo_block_result, k_chunk_idx, N_chunk_idx, print_details)
+        assert dut.squared_valid_out.value == 1, f"Expected valid out to be high 1-cycle after inputting data block {i} of {NUM_BLOCKS_OUT_OF_SQUARER} in the initial state"
+        assert dut.reduced_square_out.value.integer == modulo_result_chunks_out[i], f"Expected {hex(modulo_result_chunks_out[i])} for block {i} of {NUM_BLOCKS_OUT_OF_SQUARER} in the initial state, got {hex(dut.reduced_square_out.value.integer)}"
+    await finish_driving_data(dut)
+    return k_chunk_idx, N_chunk_idx
+
+async def drive_data_block(dut, reduced_modulo_block_in, k_chunk_idx, N_chunk_idx, print_details=False):
     """
     Drives a single chunk of data. data_valid_in must be manually set to 0 after
     all chunks are sent in whichever test is driving data.
@@ -136,53 +154,14 @@ async def verify_reducer_and_final_outputs(dut, previous_multiplier_output, k_ch
 
 async def verify_no_outputs_after_final_loop(dut, k_chunk_idx, N_chunk_idx, print_details=False):
     ctr = 0
-    while ctr < 2*100_000:
-        await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
+    while ctr < MAX_CYCLES_BEFORE_DEADLOCK_DETECTED:
+        k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
         assert dut.multiplier_valid_out.value != 1, "Expected the squarer's multiplier to no longer accept new inputs after the maximum-exponent loop iteration"
         ctr += 1
-
-@cocotb.test()
-async def test_deterministic(dut):
-    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
-    # use helper function to assert reset signal
-    dut.N_in.value = 0
-    dut.k_in.value = 0
-    dut.reduced_modulo_block_in.value = 0
-    dut.data_valid_in.value = 0
-    await reset(dut.rst_in, dut.clk_in)
-    print("\n\Deterministic Test Starting!!\n\n")
-    # print_details = True
-    print_details = False
-
-    a = 3  # Randomly selected number by me, not meaningful in anyway
     
-    dut.N_in = N_chunks[0]  # N_in and k_in should be initialized to their first chunks.
-    dut.k_in = k_chunks[0]
+    return k_chunk_idx, N_chunk_idx
 
-    N_chunk_idx = 1  # Represents the idx of the next N-chunk to pass into the squarer stream; by default, index 0 is already passed in
-    k_chunk_idx = 1  # Same as above ^
-    
-    current_reduced_modulo_result = (a * R) % N  # Initial result
-    if print_details:
-        print(f"Initial result:\n{hex(current_reduced_modulo_result)}")
-    modulo_result_chunks_out = []  # Used to keep track of the chunks
-    for i in range(1, NUM_BLOCKS_INTO_MULTIPLIER + 1):
-        modulo_block_result = current_reduced_modulo_result & REGISTER_SIZE_ALL_ONES
-        modulo_result_chunks_out.append(modulo_block_result)
-        if print_details:
-            print("Appended result:", hex(modulo_block_result))
-        current_reduced_modulo_result = current_reduced_modulo_result >> REGISTER_SIZE
-        # current_reduced_modulo_result = current_reduced_modulo_result // REGISTER_SIZE  // TODO - Uncomment this in case right shifting is scuffed.
-        k_chunk_idx, N_chunk_idx = await drive_data(dut, modulo_block_result, k_chunk_idx, N_chunk_idx, print_details)
-        if i != 1:
-            assert dut.squared_valid_out.value == 1, f"Expected valid out to be high 1-cycle after inputting data block {i-1} of {NUM_BLOCKS_OUT_OF_SQUARER} in the initial state"
-            assert dut.reduced_square_out.value.integer == modulo_result_chunks_out[i-1], f"Expected {hex(modulo_result_chunks_out[i-1])} for block {i-1} of {NUM_BLOCKS_OUT_OF_SQUARER} in the initial state, got {hex(dut.reduced_square_out.value.integer)}"
-    k_chunk_idx, N_chunk_idx = await AwareClockCycles(dut, 1, k_chunk_idx, N_chunk_idx, print_details)
-    assert dut.squared_valid_out.value == 1, "Expected valid out to be high 1-cycle after inputting the last data block in the initial state"
-    assert dut.reduced_square_out.value.integer == modulo_result_chunks_out[-1], f"Expected {hex(modulo_result_chunks_out[-1])} for the last block of the initial state, got {hex(dut.reduced_square_out.value.integer)}"
-    await finish_driving_data(dut)
-    
-
+async def verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details=False):
     initial_montgomery_output = (a * R) % N
     k_chunk_idx, N_chunk_idx, prev_multiplier_output = await verify_multiplier_outputs(dut, initial_montgomery_output, k_chunk_idx, N_chunk_idx, print_details)
     k_chunk_idx, N_chunk_idx, prev_reducer_output = await verify_reducer_and_final_outputs(dut, prev_multiplier_output, k_chunk_idx, N_chunk_idx, print_details)
@@ -192,31 +171,115 @@ async def test_deterministic(dut):
         k_chunk_idx, N_chunk_idx, prev_reducer_output = await verify_reducer_and_final_outputs(dut, prev_multiplier_output, k_chunk_idx, N_chunk_idx, print_details)
         print(f"Finished pass {i} (a^(2^{i}))")
 
-    # a_val_to_mult = a_val_to_mult**2
-    # k_chunk_idx, N_chunk_idx = await verify_multiplier_outputs(dut, a_val_to_mult, k_chunk_idx, N_chunk_idx, print_details)
-    # k_chunk_idx, N_chunk_idx = await verify_reducer_and_final_outputs(dut, a_val_to_mult, k_chunk_idx, N_chunk_idx, print_details)
-    # print("Finished pass 2 (a^2)")
-
-    # a_val_to_mult = a_val_to_mult**2
-    # k_chunk_idx, N_chunk_idx = await verify_multiplier_outputs(dut, a_val_to_mult, k_chunk_idx, N_chunk_idx, print_details)
-    # k_chunk_idx, N_chunk_idx = await verify_reducer_and_final_outputs(dut, a_val_to_mult, k_chunk_idx, N_chunk_idx, print_details)
-    # print("Finished pass 3 (a^4)")
-
     k_chunk_idx, N_chunk_idx = await verify_no_outputs_after_final_loop(dut, k_chunk_idx, N_chunk_idx, print_details)
+    print(f"Finished dealing with input #{input_num}")
+    return k_chunk_idx, N_chunk_idx
+
+def print_start_of_test_message(message_to_send):
+    print(message_to_send)
+    print(f"REGISTER_SIZE: {REGISTER_SIZE}")
+    print(f"BITS_IN_NUM: {BITS_IN_NUM}")
+    print(f"HIGHEST_EXPONENT: {HIGHEST_EXPONENT}")
+    print(f"R: {R_EXPONENT}")
 
 
-# @cocotb.test()
-# async def test_random(dut):
-#     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
-#     # use helper function to assert reset signal
-#     dut.N_in.value = 0
-#     dut.k_in.value = 0
-#     dut.reduced_modulo_block_in.value = 0
-#     dut.data_valid_in.value = 0
-#     await reset(dut.rst_in, dut.clk_in)
+@cocotb.test()
+async def test_deterministic_one_input(dut):
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    # use helper function to assert reset signal
+    dut.N_in.value = 0
+    dut.k_in.value = 0
+    dut.reduced_modulo_block_in.value = 0
+    dut.data_valid_in.value = 0
+    await reset(dut.rst_in, dut.clk_in)
+    print_start_of_test_message("\n\nDeterministic Test 1 Starting!!\n\n")
+    # print_details = True
+    print_details = False
+    
+    dut.N_in = N_chunks[0]  # N_in and k_in should be initialized to their first chunks.
+    dut.k_in = k_chunks[0]
+
+    N_chunk_idx = 1  # Represents the idx of the next N-chunk to pass into the squarer stream; by default, index 0 is already passed in
+    k_chunk_idx = 1  # Same as above ^
+    
+    input_num = 1
+    a = 3  # Randomly selected number by me, not meaningful in anyway
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
 
 
-REGISTER_SIZE = 256
+@cocotb.test()
+async def test_deterministic_two_inputs(dut):
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    # use helper function to assert reset signal
+    dut.N_in.value = 0
+    dut.k_in.value = 0
+    dut.reduced_modulo_block_in.value = 0
+    dut.data_valid_in.value = 0
+    await reset(dut.rst_in, dut.clk_in)
+    print_start_of_test_message("\n\nDeterministic Test 2 Starting!!\n\n")
+    # print_details = True
+    print_details = False
+    
+    dut.N_in = N_chunks[0]  # N_in and k_in should be initialized to their first chunks.
+    dut.k_in = k_chunks[0]
+
+    N_chunk_idx = 1  # Represents the idx of the next N-chunk to pass into the squarer stream; by default, index 0 is already passed in
+    k_chunk_idx = 1  # Same as above ^
+    
+    input_num = 1
+    a = 3  # Randomly selected number by me, not meaningful in anyway
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
+
+    input_num += 1
+    a = 11  # Randomly selected number by me, not meaningful in anyway
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
+
+
+@cocotb.test()
+async def test_random_three_inputs(dut):
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    # use helper function to assert reset signal
+    dut.N_in.value = 0
+    dut.k_in.value = 0
+    dut.reduced_modulo_block_in.value = 0
+    dut.data_valid_in.value = 0
+    await reset(dut.rst_in, dut.clk_in)
+    print_start_of_test_message("\n\Random Test 3 Starting!!\n\n")
+    # print_details = True
+    print_details = False
+    
+    dut.N_in = N_chunks[0]  # N_in and k_in should be initialized to their first chunks.
+    dut.k_in = k_chunks[0]
+
+    N_chunk_idx = 1  # Represents the idx of the next N-chunk to pass into the squarer stream; by default, index 0 is already passed in
+    k_chunk_idx = 1  # Same as above ^
+    
+    input_num = 1
+    a = random.randint(1, 2**2048 - 1)
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
+
+    input_num += 1
+    a = random.randint(1, 2**2048 - 1)
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
+
+    input_num += 1
+    a = random.randint(1, 2**2048 - 1)
+    k_chunk_idx, N_chunk_idx = await drive_data(dut, a, k_chunk_idx, N_chunk_idx, print_details)
+    
+    k_chunk_idx, N_chunk_idx = await verify_num_bits_exact_iterations(dut, a, k_chunk_idx, N_chunk_idx, input_num, print_details)
+
+
+REGISTER_SIZE = 1024
 REGISTER_SIZE_ALL_ONES = 2**REGISTER_SIZE - 1
 
 BITS_IN_NUM = 2048
@@ -228,6 +291,9 @@ NUM_BLOCKS_INTO_MULTIPLIER = NUM_BLOCKS_OUT_OF_SQUARER
 NUM_BLOCKS_INTO_REDUCER = 2 * NUM_BLOCKS_INTO_MULTIPLIER
 NUM_BLOCKS_IN_N_AND_K = BITS_IN_N_AND_K // REGISTER_SIZE
 
+MAX_CYCLES_BEFORE_DEADLOCK_DETECTED = 2*100_000
+
+HIGHEST_EXPONENT = BITS_IN_NUM
 
 R_EXPONENT = 4096
 R = 2**R_EXPONENT
