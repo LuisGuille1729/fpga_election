@@ -57,16 +57,13 @@ def calculate_bezout_constants(N: int):
     
     return constants
  
-def dispatch_blocks(value, num_blocks, infinite=True):
+def dispatch_blocks(value, num_blocks):
     while True:
         val = value
         for _ in range(num_blocks):
             yield val & (2**REGISTER_SIZE-1)
             val = val >> REGISTER_SIZE
         # print(f"Looping after {num_blocks}")
-        
-        if infinite is False:
-            break
 
 def check_for_block_request(dut, k_dispatcher, N_dispatcher):
     if (dut.consumed_k_out.value):
@@ -119,7 +116,7 @@ async def test_reduction_outputs(dut, T, N, P, global_k_dispatcher, global_N_dis
     return T_NUM_BLOCKS + calculating_cycles + output_cycles
     
 
-REGISTER_SIZE = 32
+REGISTER_SIZE = 256
 T_NUM_BLOCKS = 8192//REGISTER_SIZE
 OUT_NUM_BLOCKS = 4096//REGISTER_SIZE
 

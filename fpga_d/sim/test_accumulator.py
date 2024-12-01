@@ -85,7 +85,7 @@ def test_tmds_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [proj_path / "hdl" / "accumulator.sv", proj_path / "hdl" / "pipeliner.sv", proj_path / "hdl" / "xilinx_true_dual_port_read_first_2_clock_ram.v"]
     build_test_args = ["-Wall"]
-    parameters = {"REGISTER_SIZE": register_size, "NUM_BITS_STORED": num_bits_stored}
+    parameters = {"register_size": register_size, "num_bits_stored": num_bits_stored}
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(

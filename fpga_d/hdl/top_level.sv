@@ -3,728 +3,269 @@
 
 module top_level
   (
-   input wire          clk_100mhz,
-   output logic [15:0] led,
-   // camera bus
-   input wire [7:0]    camera_d, // 8 parallel data wires
-   output logic        cam_xclk, // XC driving camera
-   input wire          cam_hsync, // camera hsync wire
-   input wire          cam_vsync, // camera vsync wire
-   input wire          cam_pclk, // camera pixel clock
-   inout wire          i2c_scl, // i2c inout clock
-   inout wire          i2c_sda, // i2c inout data
-   input wire [15:0]   sw,
-   input wire [3:0]    btn,
-   output logic [2:0]  rgb0,
-   output logic [2:0]  rgb1,
-   // seven segment
-   output logic [3:0]  ss0_an,//anode control for upper four digits of seven-seg display
-   output logic [3:0]  ss1_an,//anode control for lower four digits of seven-seg display
-   output logic [6:0]  ss0_c, //cathode controls for the segments of upper four digits
-   output logic [6:0]  ss1_c, //cathod controls for the segments of lower four digits
-   // hdmi port
-   output logic [2:0]  hdmi_tx_p, //hdmi output signals (positives) (blue, green, red)
-   output logic [2:0]  hdmi_tx_n, //hdmi output signals (negatives) (blue, green, red)
-   output logic        hdmi_clk_p, hdmi_clk_n //differential hdmi clock
-   );
-
-  // shut up those RGBs
-  assign rgb0 = 0;
-  assign rgb1 = 0;
-
-  // Clock and Reset Signals
-  logic          sys_rst_camera;
-  logic          sys_rst_pixel;
-
-  logic          clk_camera;
-  logic          clk_pixel;
-  logic          clk_5x;
-  logic          clk_xc;
-
-  logic          clk_100_passthrough;
-
-  // clocking wizards to generate the clock speeds we need for our different domains
-  // clk_camera: 200MHz, fast enough to comfortably sample the cameera's PCLK (50MHz)
-  cw_hdmi_clk_wiz wizard_hdmi
-    (.sysclk(clk_100_passthrough),
-     .clk_pixel(clk_pixel),
-     .clk_tmds(clk_5x),
-     .reset(0));
-
-  cw_fast_clk_wiz wizard_migcam
-    (.clk_in1(clk_100mhz),
-     .clk_camera(clk_camera),
-     .clk_xc(clk_xc),
-     .clk_100(clk_100_passthrough),
-     .reset(0));
-
-  // assign camera's xclk to pmod port: drive the operating clock of the camera!
-  // this port also is specifically set to high drive by the XDC file.
-  assign cam_xclk = clk_xc;
-
-  assign sys_rst_camera = btn[0]; //use for resetting camera side of logic
-  assign sys_rst_pixel = btn[0]; //use for resetting hdmi/draw side of logic
-
-
-  // video signal generator signals
-  logic          hsync_hdmi;
-  logic          vsync_hdmi;
-  logic [10:0]  hcount_hdmi;
-  logic [9:0]    vcount_hdmi;
-  logic          active_draw_hdmi;
-  logic          new_frame_hdmi;
-  logic [5:0]    frame_count_hdmi;
-  logic          nf_hdmi;
-
-  // rgb output values
-  logic [7:0]          red,green,blue;
-
-  // ** Handling input from the camera **
-
-  // synchronizers to prevent metastability
-  logic [7:0]    camera_d_buf [1:0];
-  logic          cam_hsync_buf [1:0];
-  logic          cam_vsync_buf [1:0];
-  logic          cam_pclk_buf [1:0];
-
-  always_ff @(posedge clk_camera) begin
-     camera_d_buf <= {camera_d, camera_d_buf[1]};
-     cam_pclk_buf <= {cam_pclk, cam_pclk_buf[1]};
-     cam_hsync_buf <= {cam_hsync, cam_hsync_buf[1]};
-     cam_vsync_buf <= {cam_vsync, cam_vsync_buf[1]};
-  end
-
-  logic [10:0] camera_hcount;
-  logic [9:0]  camera_vcount;
-  logic [15:0] camera_pixel;
-  logic        camera_valid;
-
-  // your pixel_reconstruct module, from week 5 and 6
-  // hook it up to buffered inputs.
-  //same as it ever was.
-
-  pixel_reconstruct
-    (.clk_in(clk_camera),
-     .rst_in(sys_rst_camera),
-     .camera_pclk_in(cam_pclk_buf[0]),
-     .camera_hs_in(cam_hsync_buf[0]),
-     .camera_vs_in(cam_vsync_buf[0]),
-     .camera_data_in(camera_d_buf[0]),
-     .pixel_valid_out(camera_valid),
-     .pixel_hcount_out(camera_hcount),
-     .pixel_vcount_out(camera_vcount),
-     .pixel_data_out(camera_pixel));
-
-  //----------------BEGIN NEW STUFF FOR LAB 07------------------
-
-  //clock domain cross (from clk_camera to clk_pixel)
-  //switching from camera clock domain to pixel clock domain early
-  //this lets us do convolution on the 74.25 MHz clock rather than the
-  //200 MHz clock domain that the camera lives on.
-  logic empty;
-  logic cdc_valid;
-  logic [15:0] cdc_pixel;
-  logic [10:0] cdc_hcount;
-  logic [9:0] cdc_vcount;
-
-  //cdc fifo (AXI IP). Remember to include that IP folder.
-  fifo cdc_fifo
-    (.wr_clk(clk_camera),
-     .full(),
-     .din({camera_hcount, camera_vcount, camera_pixel}),
-     .wr_en(camera_valid),
-
-     .rd_clk(clk_pixel),
-     .empty(empty),
-     .dout({cdc_hcount, cdc_vcount, cdc_pixel}),
-     .rd_en(1) //always read
-    );
-  assign cdc_valid = ~empty; //watch when empty. Ready immediately if something there
-
-  //----
-  //Filter 0: 1280x720 convolution of gaussian blur
-  logic [10:0] f0_hcount;  //hcount from filter0 module
-  logic [9:0] f0_vcount; //vcount from filter0 module
-  logic [15:0] f0_pixel; //pixel data from filter0 module
-  logic f0_valid; //valid signals for filter0 module
-  //full resolution filter
-  filter #(.K_SELECT(1),.HRES(1280),.VRES(720))
-    filtern(
-    .clk_in(clk_pixel),
-    .rst_in(sys_rst_pixel),
-    .data_valid_in(cdc_valid),
-    .pixel_data_in(cdc_pixel),
-    .hcount_in(cdc_hcount),
-    .vcount_in(cdc_vcount),
-    .data_valid_out(f0_valid),
-    .pixel_data_out(f0_pixel),
-    .hcount_out(f0_hcount),
-    .vcount_out(f0_vcount)
+    input wire          clk_100mhz,
+    input wire          [1:0] btn
   );
 
-  //----
-  logic [10:0] lb_hcount;  //hcount to filter modules
-  logic [9:0] lb_vcount; //vcount to filter modules
-  logic [15:0] lb_pixel; //pixel data to filter modules
-  logic lb_valid; //valid signals to filter modules
+  logic   sys_rst;
+  assign sys_rst = btn[0];
+  logic start;
+  assign start = btn[1];
 
-  //selection logic to either go through (btn[1]=1)
-  //or bypass (btn[1]==0) the first filter
-  //in the first part of lab as you develop line buffer, you'll want to bypass
-  //since your filter won't be working, but it would be good to test the
-  //downsampling line buffer below on its own
-  always_ff @(posedge clk_pixel) begin
-    if (btn[1])begin
-      ds_hcount = cdc_hcount;
-      ds_vcount = cdc_vcount;
-      ds_pixel = cdc_pixel;
-      ds_valid = cdc_valid;
-    end else begin
-      ds_hcount = f0_hcount;
-      ds_vcount = f0_vcount;
-      ds_pixel = f0_pixel;
-      ds_valid = f0_valid;
+
+  // CONSTANTS VALUES  
+  localparam N_VALUE = 24298603348542999239474744469072890490956354295641370729036981648708630343434725324552857951009931558546313766563870577924497779647807993675137391985388865972325629382224451115147388661855418295796796426092117412381873609522077928268569523964665547055712043997759152822443548229142496038633810462117915959965269710922465262548828341138509786372705797502294771830110882552969910298655546490669918353671710285533456039285707492948419069894361429814515896814459547808304401372368479975170068863943438080814679348043287738485812146166554250955487778956844544755844751992223318142581805914904219738103941508103889347156767
+  localparam G_VALUE = N_VALUE + 1
+
+  localparam N_SQUARED_VALUE = 590422124689825055380819807609388189571256327875045759413123457324012204244904348160287525082997271790713457882660955619888946254261043203027771593298628441011612035265723835242026121235268765066944326490013942087806775580532770419185006727693836762421126549971166777350187227849036747874498748898200371278162103260529601535123784241275436339520934294087305771785057763906429748321306960060302877347805301757220204940169408640087558461307977499958542938818185362073916109749225361753465488257725527781630462231753011771059924172480693534542047579157001196799192378909460518139302358557373319671729492711810667118192183711386265644011686234954732739561715352966757275591394362051763747096082775428034331257483730208748244296931348278644467996131508327249311248703598496538092607531165259331139922697302096359403581744626882396938437309021732688016235359847356456980294356847006056239507114391778248012879303412205211396556204524145521662064393273536726990926093148343745926511722322805650194868790817814574744175510423873562280366546710025852968180416945163684882551407895812254630573660655532948916284348570078749620871743294686585436504822696481572626713064081970623249985910047616445949491493081152698162104745221931251546873892289
+  localparam K_VALUE = 143470092535370572884762559577261597060726098095130651285005957313214286020208846248841066413839665875461265127305468068675031009431615257076642373897015244136524563555490527907489468206900169957371718405066201235672090362478853663742336475964379108870711218822319915578568841927832446909576170206724004148662014335256366686051416432871380265066096266104993996707561049975588005673291226873645650089976222132906287395873762164927828399409677542706610136520339776715033573328301612875290174288048957888104513170905651338622165968798603889655834913370256159826940403775407788986108836704031341025569895498152471030201955294429901239594071770739717406269774068252071820981877376647344316707332724263561803448778502843622405588443134412694906949791848247581439427186190448488327675794671096010372437761696016989799470309941546670264823723175030798254161797471206863652908093391507702691498503852245524787840057862796014700934951893477680960594052882015846665426104688827909670722048223991884739539367655706233535869616672961157302847254190896924514009866479293385406880250829014263662616828841246401389608022822438266332289468984960397434107372764152486555063086719771617731206415603770119148562143343177455545346632889001702426541456831
+  localparam R_SQUARED_MOD_VALUE = 132653116745465813403613936559069372346722930557434473523067957962139174147639570382609150215473852099310862715418315754256629031708241253285733518596158476805300552566686726927504837278883965080495382848082573337043841241151347034236865433165934808314563917605348417149352559070105236793349333411165178494017193612029530135683590235832621117643483257960841382482566828200165362953933212744870778387316585010755252192618763852118666505509110164281703384305576820345618658907503898679265927003208874366061901691470558053463435436192414528970428955033584996196561304871511985926651623620243992602501042900959601353014009247857299811376737762601587607457265431823683991986277481408760830022712585041671185865548693828284420180131103255330375946415589002974503532392725125325802529472017204262336044459002093540427475819883705301022499935384321533809020567530017219788046878864094538881594440915158159245544658905846436155718922734239212607052645505401838339030536830621170763946507991183762344554251755406330052399252863137023291073940788178312530993643691268558867304945727174752519483342330983200789644685219568271101672657194302944828023930179397792108420415761819262383882241989842819883717036322935186066387339738662919582844814616
+  // localparam LAMBDA_VALUE = 24298603348542999239474744469072890490956354295641370729036981648708630343434725324552857951009931558546313766563870577924497779647807993675137391985388865972325629382224451115147388661855418295796796426092117412381873609522077928268569523964665547055712043997759152822443548229142496038633810462117915959964955464479024933422992909635397164311546361372532118006196725814332208510070121559031989216338031857983916010030668064205891373472234326096586015391335681399251733336672726683199532344809536988586555705039782732792395990414225992198743278061328019762865406265480992968614844386447881974648024301034133270890160
+  // localparam MU_VALUE = 8915567752383628781438898187002797896548025900480737799095311841381836545755198503892372879726878495151035115946986868458012154448649583896132194358560329782831378798600255894543884351748301246095759638231762423081258773261447078148315461663411905258069603207263310818435311223030456445831047816378110749327580484779512120318259491191211823394214832953187276053506207701544252431583335833161276475407653180651152186091635887389297141653769732662414014629608293223179202238133723709179125878839638929208525481449388861597926415145013669009524453207751806355956198029749591583141643408193028947053783351959727470281524
+
+  // SIZES
+  localparam REGISTER_SIZE = 32;
+  localparam PRIME_SIZE = 1024;
+  localparam N_SIZE = 2*PRIME_SIZE;
+  localparam G_SIZE = N_SIZE;
+  localparam N_SQUARED_SIZE = 2*N_SIZE;
+  localparam R_SIZE = $clog2(N_SQUARED_SIZE) + 1;
+  localparam R_SQUARED_MOD_SIZE = N_SQUARED_SIZE;
+  localparam K_SIZE = N_SQUARED_SIZE;
+  localparam T_SIZE = 2*N_SQUARED_SIZE;
+
+
+  // for decryption
+  //localparam LAMBDA_SIZE = N_SIZE;
+  // localparam MU = N_SIZE
+
+  // AMOUNT OF BLOCKS PER CONSTANT
+  localparam NUM_N_BLOCKS = N_SIZE/REGISTER_SIZE;
+  localparam NUM_G_BLOCKS = G_SIZE/REGISTER_SIZE;
+  localparam NUM_N_SQUARED_BLOCKS = N_SQUARED_SIZE/REGISTER_SIZE;
+  localparam NUM_R_SQUARED_BLOCKS =  R_SQUARED_MOD_SIZE/REGISTER_SIZE;
+  localparam NUM_K_BLOCKS = K_SIZE/REGISTER_SIZE;
+  localparam NUM_T_BLOCKS = T_SIZE/REGISTER_SIZE;
+
+
+
+  // CONSTANTS INITIALIZATION:
+  logic [$clog2(NUM_N_BLOCKS)-1:0][REGISTER_SIZE-1:0] n;
+  logic [$clog2(NUM_G_BLOCKS)-1:0][REGISTER_SIZE-1:0] g; 
+  logic [$clog2(NUM_N_SQUARED_BLOCKS)-1:0][REGISTER_SIZE-1:0] n_squared;
+  logic [$clog2(NUM_R_SQUARED_BLOCKS)-1:0][REGISTER_SIZE-1:0] r_squared; 
+  logic [$clog2(NUM_K_BLOCKS)-1:0][REGISTER_SIZE-1:0] k;
+  
+  localparam R_EXPONENT = N_SQUARED_SIZE; // = 4096
+  always_ff @(posedge clk_100mhz) begin
+    if (sys_rst) begin
+      n <= N_VALUE;
+      g <= G_VALUE;
+      n_squared <= N_SQUARED_VALUE;
+      r_squared <= R_SQUARED_MOD_VALUE;
+      k <= K_VALUE;
     end
   end
 
-  //----
-  //A line buffer that, in conjunction with the control signal will down sample
-  //the camera (or f0 filter) values from 1280x720 to 320x180
-  //in reality we could get by without this, but it does make things a little easier
-  //and we've also added it since it gives us a means of testing the line buffer
-  //design outside of the filter.
-  logic [2:0][15:0] lb_buffs; //grab output of down sample line buffer
-  logic ds_control; //controlling when to write (every fourth pixel and line)
-  logic [10:0] ds_hcount;  //hcount to downsample line buffer
-  logic [9:0] ds_vcount; //vcount to downsample line buffer
-  logic [15:0] ds_pixel; //pixel data to downsample line buffer
-  logic ds_valid; //valid signals to downsample line buffer
-  assign ds_control = ds_valid&&(ds_hcount[1:0]==2'b0)&&(ds_vcount[1:0]==2'b0);
-  line_buffer #(.HRES(320),
-                .VRES(180))
-    ds_lbuff (
-    .clk_in(clk_pixel),
-    .rst_in(sys_rst_pixel),
-    .data_valid_in(ds_control),
-    .pixel_data_in(ds_pixel),
-    .hcount_in(ds_hcount[10:2]),
-    .vcount_in(ds_vcount[9:2]),
-    .data_valid_out(lb_valid),
-    .line_buffer_out(lb_buffs),
-    .hcount_out(lb_hcount),
-    .vcount_out(lb_vcount)
+
+
+  // UART Receive
+  // We are assuming we are receiving the bits in lsb first order
+  logic valid_data;
+  logic [7:0] data_received_byte;
+
+  uart_receive #(
+    .INPUT_CLOCK_FREQ(100_000_000), // may change
+    .BAUD_RATE(57600)
+  ) laptop_encryptor_uart
+  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .rx_wire_in(), //TODO
+    .new_data_out(valid_data),
+    .data_byte_out(data_received_byte)
   );
 
-  assign lb_pixel = lb_buffs[1]; //pass on only the middle one.
+  // For now we only send the candidate number
+  // (Future: voterID)
+  // (Future: more bytes for checking vote)
 
-  //----
-  //Create six different filters that all exist in parallel
-  //The outputs of all six filters are fed into the unpacked arrays below:
-  logic [10:0] f_hcount [5:0];  //hcount from filter modules
-  logic [9:0] f_vcount [5:0]; //vcount from filter modules
-  logic [15:0] f_pixel [5:0]; //pixel data from filter modules
-  logic f_valid [5:0]; //valid signals for filter modules
+  // PROCESS VOTE
+  logic candidate_vote;
+  logic valid_processed_vote;
 
-  //using generate/genvar, create five *Different* instances of the
-  //filter module (you'll write that).  Each filter will implement a different
-  //kernel
-  generate
-    genvar i;
-    for (i=0; i<6; i=i+1)begin
-      filter #(.K_SELECT(i),.HRES(320),.VRES(180))
-        filterm(
-        .clk_in(clk_pixel),
-        .rst_in(sys_rst_pixel),
-        .data_valid_in(lb_valid),
-        .pixel_data_in(lb_pixel),
-        .hcount_in(lb_hcount),
-        .vcount_in(lb_vcount),
-        .data_valid_out(f_valid[i]),
-        .pixel_data_out(f_pixel[i]),
-        .hcount_out(f_hcount[i]),
-        .vcount_out(f_vcount[i])
-      );
-    end
-  endgenerate
+  vote_processor #(
 
-  //combine hor and vert signals from filters 4 and 5 for special signal:
-  logic [7:0] fcomb_r, fcomb_g, fcomb_b;
-  assign fcomb_r = (f_pixel[4][15:11]+f_pixel[5][15:11])>>1;
-  assign fcomb_g = (f_pixel[4][10:5]+f_pixel[5][10:5])>>1;
-  assign fcomb_b = (f_pixel[4][4:0]+f_pixel[5][4:0])>>1;
-
-  //------
-  //Choose which filter to use
-  //based on values of sw[2:0] select which filter output gets handed on to the
-  //next module. We must make sure to route hcount, vcount, pixels and valid signal
-  // for each module.  Could have done this with a for loop as well!  Think
-  // about it!
-  logic [10:0] fmux_hcount; //hcount from filter mux
-  logic [9:0]  fmux_vcount; //vcount from filter mux
-  logic [15:0] fmux_pixel; //pixel data from filter mux
-  logic fmux_valid; //data valid from filter mux
-
-  //000 Identity Kernel
-  //001 Gaussian Blur
-  //010 Sharpen
-  //011 Ridge Detection
-  //100 Sobel Y-axis Edge Detection
-  //101 Sobel X-axis Edge Detection
-  //110 Total Sobel Edge Detection
-  //111 Output of Line Buffer Directly (Helpful for debugging line buffer in first part)
-  always_ff @(posedge clk_pixel)begin
-    case (sw[2:0])
-      3'b000: begin
-        fmux_hcount <= f_hcount[0];
-        fmux_vcount <= f_vcount[0];
-        fmux_pixel <= f_pixel[0];
-        fmux_valid <= f_valid[0];
-      end
-      3'b001: begin
-        fmux_hcount <= f_hcount[1];
-        fmux_vcount <= f_vcount[1];
-        fmux_pixel <= f_pixel[1];
-        fmux_valid <= f_valid[1];
-      end
-      3'b010: begin
-        fmux_hcount <= f_hcount[2];
-        fmux_vcount <= f_vcount[2];
-        fmux_pixel <= f_pixel[2];
-        fmux_valid <= f_valid[2];
-      end
-      3'b011: begin
-        fmux_hcount <= f_hcount[3];
-        fmux_vcount <= f_vcount[3];
-        fmux_pixel <= f_pixel[3];
-        fmux_valid <= f_valid[3];
-      end
-      3'b100: begin
-        fmux_hcount <= f_hcount[4];
-        fmux_vcount <= f_vcount[4];
-        fmux_pixel <= f_pixel[4];
-        fmux_valid <= f_valid[4];
-      end
-      3'b101: begin
-        fmux_hcount <= f_hcount[5];
-        fmux_vcount <= f_vcount[5];
-        fmux_pixel <= f_pixel[5];
-        fmux_valid <= f_valid[5];
-      end
-      3'b110: begin
-        fmux_hcount <= f_hcount[4];
-        fmux_vcount <= f_vcount[4];
-        fmux_pixel <= {fcomb_r[4:0],fcomb_g[5:0],fcomb_b[4:0]};
-        fmux_valid <= f_valid[4]&&f_valid[5];
-      end
-      default: begin
-        fmux_hcount <= lb_hcount;
-        fmux_vcount <= lb_vcount;
-        fmux_pixel <= lb_pixel;
-        fmux_valid <= lb_valid;
-      end
-    endcase
-  end
-
-  localparam FB_DEPTH = 320*180;
-  localparam FB_SIZE = $clog2(FB_DEPTH);
-  logic [FB_SIZE-1:0] addra; //used to specify address to write to in frame buffer
-  logic valid_camera_mem; //used to enable writing pixel data to frame buffer
-  logic [15:0] camera_mem; //used to pass pixel data into frame buffer
-
-  //because the down sampling already happened upstream, there's no need to do here.
-  always_ff @(posedge clk_pixel) begin
-    if(fmux_valid) begin
-      addra <= fmux_hcount + fmux_vcount * 320;
-      camera_mem <= fmux_pixel;
-      valid_camera_mem <= 1;
-    end else begin
-      valid_camera_mem <= 0;
-    end
-  end
-
-  //frame buffer from IP
-  blk_mem_gen_0 frame_buffer (
-    .addra(addra), //pixels are stored using this math
-    .clka(clk_pixel),
-    .wea(valid_camera_mem),
-    .dina(camera_mem),
-    .ena(1'b1),
-    .douta(), //never read from this side
-    .addrb(addrb),//transformed lookup pixel
-    .dinb(16'b0),
-    .clkb(clk_pixel),
-    .web(1'b0),
-    .enb(1'b1),
-    .doutb(frame_buff_raw)
-  );
-  logic [15:0] frame_buff_raw; //data out of frame buffer (565)
-  logic [FB_SIZE-1:0] addrb; //used to lookup address in memory for reading from buffer
-  logic good_addrb; //used to indicate within valid frame for scaling
-  //brought in from lab 5...just do 4X upscale
-  always_ff @(posedge clk_pixel)begin
-    addrb <= (319-(hcount_hdmi >> 2)) + 320*(vcount_hdmi >> 2);
-    good_addrb <= (hcount_hdmi<1280)&&(vcount_hdmi<720);
-  end
-
-  //--------------------------END NEW STUFF-------------------
-
-  //split fame_buff into 3 8 bit color channels (5:6:5 adjusted accordingly)
-  //remapped frame_buffer outputs with 8 bits for r, g, b
-  logic [7:0] fb_red, fb_green, fb_blue;
-  always_ff @(posedge clk_pixel)begin
-    fb_red <= good_addrb?{frame_buff_raw[15:11],3'b0}:8'b0;
-    fb_green <= good_addrb?{frame_buff_raw[10:5], 2'b0}:8'b0;
-    fb_blue <= good_addrb?{frame_buff_raw[4:0],3'b0}:8'b0;
-  end
-  // Pixel Processing pre-HDMI output
-
-  // RGB to YCrCb
-
-  //output of rgb to ycrcb conversion (10 bits due to module):
-  logic [9:0] y_full, cr_full, cb_full; //ycrcb conversion of full pixel
-  //bottom 8 of y, cr, cb conversions:
-  logic [7:0] y, cr, cb; //ycrcb conversion of full pixel
-  //Convert RGB of full pixel to YCrCb
-  //See lecture 07 for YCrCb discussion.
-  //Module has a 3 cycle latency
-  rgb_to_ycrcb rgbtoycrcb_m(
-    .clk_in(clk_pixel),
-    .r_in(fb_red),
-    .g_in(fb_green),
-    .b_in(fb_blue),
-    .y_out(y_full),
-    .cr_out(cr_full),
-    .cb_out(cb_full)
+  ) process_vote(
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .valid_in(valid_data),
+    //TODO
+    .stall_in(),
+    .new_byte_in(data_received_byte),
+    .vote_out(candidate_vote),
+    .voter_id_out(), //TODO later for stretch
+    .valid_vote_out(valid_processed_vote)
   );
 
-  //channel select module (select which of six color channels to mask):
-  logic [2:0] channel_sel;
-  logic [7:0] selected_channel; //selected channels
-  //selected_channel could contain any of the six color channels depend on selection
+  // GENERATE RANDOM NUMBER
+  logic [REGISTER_SIZE-1:0] random_block;
+  logic random_valid;
 
-  //threshold module (apply masking threshold):
-  logic [7:0] lower_threshold;
-  logic [7:0] upper_threshold;
-  logic mask; //Whether or not thresholded pixel is 1 or 0
-
-  //Center of Mass variables (tally all mask=1 pixels for a frame and calculate their center of mass)
-  logic [10:0] x_com, x_com_calc; //long term x_com and output from module, resp
-  logic [9:0] y_com, y_com_calc; //long term y_com and output from module, resp
-  logic new_com; //used to know when to update x_com and y_com ...
-
-  //take lower 8 of full outputs.
-  // treat cr and cb as signed numbers, invert the MSB to get an unsigned equivalent ( [-128,128) maps to [0,256) )
-  assign y = y_full[7:0];
-  assign cr = {!cr_full[7],cr_full[6:0]};
-  assign cb = {!cb_full[7],cb_full[6:0]};
-
-  assign channel_sel = {1'b1, sw[4:3]}; //[3:1];
-  //modified from before...ignoring red, green, blue
-  // * 3'b000: green (not possible now)
-  // * 3'b001: red (not possible now)
-  // * 3'b010: blue (not possible now)
-  // * 3'b011: not valid
-  // * 3'b100: y (luminance)
-  // * 3'b101: Cr (Chroma Red)
-  // * 3'b110: Cb (Chroma Blue)
-  // * 3'b111: not valid
-  //Channel Select: Takes in the full RGB and YCrCb information and
-  // chooses one of them to output as an 8 bit value
-  channel_select mcs(
-     .sel_in(channel_sel),
-     .r_in(fb_red),    //TODO: needs to use pipelined signal (PS1)
-     .g_in(fb_green),  //TODO: needs to use pipelined signal (PS1)
-     .b_in(fb_blue),   //TODO: needs to use pipelined signal (PS1)
-     .y_in(y),
-     .cr_in(cr),
-     .cb_in(cb),
-     .channel_out(selected_channel)
+  // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
+  rand_gen#(
+    .BITSIZE(REGISTER_SIZE)
+  ) 
+  rng_stream
+  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .trigger_in(valid_processed_vote),
+    .rand_out(random_block),
+    .valid_out(random_valid)
   );
 
-  //threshold values used to determine what value  passes:
-  assign lower_threshold = {sw[11:8],4'b0};
-  assign upper_threshold = {sw[15:12],4'b0};
+  // [Multiplier Block Select Counter]
+  // R_SQUARED Block Select
+  logic[$clog2(NUM_R_SQUARED_BLOCKS)-1:0] r_squared_select_index;   //! Convention: _select_index
+  evt_counter #(.MAX_COUNT(NUM_R_SQUARED_BLOCKS))
+  r_squared_block_select
+  ( .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .evt_in(random_valid),  
+    .count_out(r_squared_select_index) // Notice this is initialized to 0, and there's a 1 cycle delay until next index.
+  );
+  logic[REGISTER_SIZE-1:0] r_squared_selected_block;              //! Convention: _selected_block
+  assign r_squared_selected_block = r_squared[r_squared_select_index];
 
-  //Thresholder: Takes in the full selected channedl and
-  //based on upper and lower bounds provides a binary mask bit
-  // * 1 if selected channel is within the bounds (inclusive)
-  // * 0 if selected channel is not within the bounds
-  threshold mt(
-     .clk_in(clk_pixel),
-     .rst_in(sys_rst_pixel),
-     .pixel_in(selected_channel),
-     .lower_bound_in(lower_threshold),
-     .upper_bound_in(upper_threshold),
-     .mask_out(mask) //single bit if pixel within mask.
+  // MULTIPLIER rand * r_squared_mod
+  logic [REGISTER_SIZE-1:0] rand_RR_mult_out_block;
+  logic rand_RR_mult_out_valid;
+  fsm_multiplier  #(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .BITS_IN_NUM(R_SQUARED_MOD_SIZE)
+  )
+  multplier_rand_RR
+  (
+    .n_in(random_block),
+    .m_in(r_squared_selected_block),
+    .valid_in(random_valid),
+    .rst_in(sys_rst),
+    .clk_in(clk_100mhz),
+    .data_out(rand_RR_mult_out_block),
+    .valid_out(rand_RR_mult_out_valid),
   );
 
 
-  logic [6:0] ss_c;
-  //modified version of seven segment display for showing
-  // thresholds and selected channel
-  // special customized version
-  lab05_ssc mssc(.clk_in(clk_pixel),
-                 .rst_in(sys_rst_pixel),
-                 .lt_in(lower_threshold),
-                 .ut_in(upper_threshold),
-                 .channel_sel_in(channel_sel),
-                 .cat_out(ss_c),
-                 .an_out({ss0_an, ss1_an})
+  // [Montgomery Reduction Block Select Counters] 
+  // N_SQUARED Block Select
+  logic[$clog2(NUM_N_SQUARED_BLOCKS)-1:0] n_squared_select_index;
+  logic consumed_n_squared_out; // triggers after reducing (TODO: initialize to 0)
+  evt_counter #(.MAX_COUNT(NUM_N_SQUARED_BLOCKS))
+  n_squared_block_select
+  ( .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .evt_in(consumed_n_squared_out),
+    .count_out(n_squared_select_index)
   );
-  assign ss0_c = ss_c; //control upper four digit's cathodes!
-  assign ss1_c = ss_c; //same as above but for lower four digits!
+  logic[REGISTER_SIZE-1:0] n_squared_selected_block;
+  assign n_squared_selected_block = n_squared[n_squared_select_index];
 
-  //Center of Mass Calculation: (you need to do)
-  //using x_com_calc and y_com_calc values
-  //Center of Mass:
-  center_of_mass com_m(
-    .clk_in(clk_pixel),
-    .rst_in(sys_rst_pixel),
-    .x_in(hcount_hdmi),  //TODO: needs to use pipelined signal! (PS3)
-    .y_in(vcount_hdmi), //TODO: needs to use pipelined signal! (PS3)
-    .valid_in(mask), //aka threshold
-    .tabulate_in((nf_hdmi)),
-    .x_out(x_com_calc),
-    .y_out(y_com_calc),
-    .valid_out(new_com)
+  
+  // K Block Select
+  logic[$clog2(NUM_K_BLOCKS)-1:0] k_select_index;
+  logic consumed_k_out; // triggers after reducing (TODO: initialize to 0)
+  evt_counter #(.MAX_COUNT(NUM_K_BLOCKS))
+  k_block_select
+  ( .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .evt_in(consumed_k_out),
+    .count_out(k_select_index)
   );
-  //grab logic for above
-  //update center of mass x_com, y_com based on new_com signal
-  always_ff @(posedge clk_pixel)begin
-    if (sys_rst_pixel)begin
-      x_com <= 0;
-      y_com <= 0;
-    end if(new_com)begin
-      x_com <= x_com_calc;
-      y_com <= y_com_calc;
-    end
-  end
-
-  //image_sprite output:
-  logic [7:0] img_red, img_green, img_blue;
-  assign img_red =0;
-  assign img_green =0;
-  assign img_blue =0;
-  //image sprite removed to keep builds focused.
+  logic[REGISTER_SIZE-1:0] k_selected_block;
+  assign k_selected_block = k[k_select_index];
 
 
-  //crosshair output:
-  logic [7:0] ch_red, ch_green, ch_blue;
-
-  //Create Crosshair patter on center of mass:
-  //0 cycle latency
-  //TODO: Should be using output of (PS3)
-  always_comb begin
-    ch_red   = ((vcount_hdmi==y_com) || (hcount_hdmi==x_com))?8'hFF:8'h00;
-    ch_green = ((vcount_hdmi==y_com) || (hcount_hdmi==x_com))?8'hFF:8'h00;
-    ch_blue  = ((vcount_hdmi==y_com) || (hcount_hdmi==x_com))?8'hFF:8'h00;
-  end
-
-
-  // HDMI video signal generator
-   video_sig_gen vsg
-     (
-      .pixel_clk_in(clk_pixel),
-      .rst_in(sys_rst_pixel),
-      .hcount_out(hcount_hdmi),
-      .vcount_out(vcount_hdmi),
-      .vs_out(vsync_hdmi),
-      .hs_out(hsync_hdmi),
-      .nf_out(nf_hdmi),
-      .ad_out(active_draw_hdmi),
-      .fc_out(frame_count_hdmi)
-      );
-
-
-  // Video Mux: select from the different display modes based on switch values
-  //used with switches for display selections
-  logic [1:0] display_choice;
-  logic [1:0] target_choice;
-
-  assign display_choice = sw[6:5]; //was [5:4]; not anymore
-  assign target_choice =  {1'b0,sw[7]}; //was [7:6]; not anymore
-
-  //choose what to display from the camera:
-  // * 'b00:  normal camera out
-  // * 'b01:  selected channel image in grayscale
-  // * 'b10:  masked pixel (all on if 1, all off if 0)
-  // * 'b11:  chroma channel with mask overtop as magenta
-  //
-  //then choose what to use with center of mass:
-  // * 'b00: nothing
-  // * 'b01: crosshair
-  // * 'b10: sprite on top
-  // * 'b11: nothing
-
-  video_mux mvm(
-    .bg_in(display_choice), //choose background
-    .target_in(target_choice), //choose target
-    .camera_pixel_in({fb_red, fb_green, fb_blue}), //TODO: needs (PS2)
-    .camera_y_in(y), //luminance TODO: needs (PS6)
-    .channel_in(selected_channel), //current channel being drawn TODO: needs (PS5)
-    .thresholded_pixel_in(mask), //one bit mask signal TODO: needs (PS4)
-    .crosshair_in({ch_red, ch_green, ch_blue}), //TODO: needs (PS8)
-    .com_sprite_pixel_in({img_red, img_green, img_blue}), //TODO: needs (PS9) maybe?
-    .pixel_out({red,green,blue}) //output to tmds
+  // MONTGOMERY REDUCE rand*R*R  (will get montgomery form of rand)
+  logic [REGISTER_SIZE-1:0] rand_RR_reduced_block;
+  logic rand_RR_reduced_valid;
+  montgomery_reduce#(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
+    .R(R_EXPONENT)
+  ) reducer1_stream(
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .valid_in(placeholder1_mult_valid_out),
+    .product_t_in(placeholder1_mult_out),
+    .k_in(k_selected_block),
+    .consumed_k_out(consumed_k_out),
+    .n_squared_in(n_squared_selected_block),
+    .consumed_n_squared_out(consumed_n_squared_out),
+    .data_out(rand_RR_reduced_block),
+    .valid_out(rand_RR_reduced_valid)
   );
 
-   // HDMI Output: just like before!
+// SQUARER STREAM
+logic [REGISTER_SIZE-1:0] squarer_out;
+logic placeholder1_squarer_out
+squarer_streamer#(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
+)
+squarer_stream ( 
+  .clk_in(clk_100mhz),
+  .rst_in(sys_rst),
+  .valid_in(rand_RR_reduced_valid),
+  .initial_data_stream_in(rand_RR_reduced_block),
+  .k_in(k_select_out),
+  .consumed_k_out(consumed_k_out),
+  .n_squared_in(n_squared_select_out),
+  .consumed_n_squared_out(consumed_n_squared_out),
+  .data_out(squarer_out),
+  .valid_out(placeholder1_squarer_out)
+);
 
-   logic [9:0] tmds_10b [0:2]; //output of each TMDS encoder!
-   logic       tmds_signal [2:0]; //output of each TMDS serializer!
-
-   //three tmds_encoders (blue, green, red)
-   //note green should have no control signal like red
-   //the blue channel DOES carry the two sync signals:
-   //  * control_in[0] = horizontal sync signal
-   //  * control_in[1] = vertical sync signal
-
-   tmds_encoder tmds_red(
-       .clk_in(clk_pixel),
-       .rst_in(sys_rst_pixel),
-       .data_in(red),
-       .control_in(2'b0),
-       .ve_in(active_draw_hdmi),
-       .tmds_out(tmds_10b[2]));
-
-   tmds_encoder tmds_green(
-         .clk_in(clk_pixel),
-         .rst_in(sys_rst_pixel),
-         .data_in(green),
-         .control_in(2'b0),
-         .ve_in(active_draw_hdmi),
-         .tmds_out(tmds_10b[1]));
-
-   tmds_encoder tmds_blue(
-        .clk_in(clk_pixel),
-        .rst_in(sys_rst_pixel),
-        .data_in(blue),
-        .control_in({vsync_hdmi,hsync_hdmi}),
-        .ve_in(active_draw_hdmi),
-        .tmds_out(tmds_10b[0]));
-
-
-   //three tmds_serializers (blue, green, red):
-   //MISSING: two more serializers for the green and blue tmds signals.
-   tmds_serializer red_ser(
-         .clk_pixel_in(clk_pixel),
-         .clk_5x_in(clk_5x),
-         .rst_in(sys_rst_pixel),
-         .tmds_in(tmds_10b[2]),
-         .tmds_out(tmds_signal[2]));
-   tmds_serializer green_ser(
-         .clk_pixel_in(clk_pixel),
-         .clk_5x_in(clk_5x),
-         .rst_in(sys_rst_pixel),
-         .tmds_in(tmds_10b[1]),
-         .tmds_out(tmds_signal[1]));
-   tmds_serializer blue_ser(
-         .clk_pixel_in(clk_pixel),
-         .clk_5x_in(clk_5x),
-         .rst_in(sys_rst_pixel),
-         .tmds_in(tmds_10b[0]),
-         .tmds_out(tmds_signal[0]));
-
-   //output buffers generating differential signals:
-   //three for the r,g,b signals and one that is at the pixel clock rate
-   //the HDMI receivers use recover logic coupled with the control signals asserted
-   //during blanking and sync periods to synchronize their faster bit clocks off
-   //of the slower pixel clock (so they can recover a clock of about 742.5 MHz from
-   //the slower 74.25 MHz clock)
-   OBUFDS OBUFDS_blue (.I(tmds_signal[0]), .O(hdmi_tx_p[0]), .OB(hdmi_tx_n[0]));
-   OBUFDS OBUFDS_green(.I(tmds_signal[1]), .O(hdmi_tx_p[1]), .OB(hdmi_tx_n[1]));
-   OBUFDS OBUFDS_red  (.I(tmds_signal[2]), .O(hdmi_tx_p[2]), .OB(hdmi_tx_n[2]));
-   OBUFDS OBUFDS_clock(.I(clk_pixel), .O(hdmi_clk_p), .OB(hdmi_clk_n));
+// logic [REGISTER_SIZE-1:0] squarer_out;
+// logic placeholder1_squarer_out
+mont_accumulator#(
+    .register_size(REGISTER_SIZE),
+    .NUM_BLOCKS(NUM_T_BLOCKS),
+)
+// TODO assuming stream is alignedwith squarer stream which is likely the case 
+monty_hall ( 
+  .clk_in(clk_100mhz),
+  .rst_in(sys_rst),
+  .valid_in(placeholder1_squarer_out),
+  .data_stream_in(squarer_out),
+  .k_in(k_select_out),
+  .n_squared_in(n_squared_select_out),
+  .data_out(squarer_out),
+  .valid_out(placeholder1_squarer_out)
+);
 
 
-   // Nothing To Touch Down Here:
-   // register writes to the camera
 
-   // The OV5640 has an I2C bus connected to the board, which is used
-   // for setting all the hardware settings (gain, white balance,
-   // compression, image quality, etc) needed to start the camera up.
-   // We've taken care of setting these all these values for you:
-   // "rom.mem" holds a sequence of bytes to be sent over I2C to get
-   // the camera up and running, and we've written a design that sends
-   // them just after a reset completes.
+// TODO Fill in the Encryptor stuff post montgomery exponentiation
+// at this point we can test if encryption works for 1 candidate
 
-   // If the camera is not giving data, press your reset button.
 
-   logic  busy, bus_active;
-   logic  cr_init_valid, cr_init_ready;
 
-   logic  recent_reset;
-   always_ff @(posedge clk_camera) begin
-      if (sys_rst_camera) begin
-         recent_reset <= 1'b1;
-         cr_init_valid <= 1'b0;
-      end
-      else if (recent_reset) begin
-         cr_init_valid <= 1'b1;
-         recent_reset <= 1'b0;
-      end else if (cr_init_valid && cr_init_ready) begin
-         cr_init_valid <= 1'b0;
-      end
-   end
 
-   logic [23:0] bram_dout;
-   logic [7:0]  bram_addr;
 
-   // ROM holding pre-built camera settings to send
-   xilinx_single_port_ram_read_first
-     #(
-       .RAM_WIDTH(24),
-       .RAM_DEPTH(256),
-       .RAM_PERFORMANCE("HIGH_PERFORMANCE"),
-       .INIT_FILE("rom.mem")
-       ) registers
-       (
-        .addra(bram_addr),     // Address bus, width determined from RAM_DEPTH
-        .dina(24'b0),          // RAM input data, width determined from RAM_WIDTH
-        .clka(clk_camera),     // Clock
-        .wea(1'b0),            // Write enable
-        .ena(1'b1),            // RAM Enable, for additional power savings, disable port when not in use
-        .rsta(sys_rst_camera), // Output reset (does not affect memory contents)
-        .regcea(1'b1),         // Output register enable
-        .douta(bram_dout)      // RAM output data, width determined from RAM_WIDTH
-        );
 
-   logic [23:0] registers_dout;
-   logic [7:0]  registers_addr;
-   assign registers_dout = bram_dout;
-   assign bram_addr = registers_addr;
 
-   logic       con_scl_i, con_scl_o, con_scl_t;
-   logic       con_sda_i, con_sda_o, con_sda_t;
 
-   // NOTE these also have pullup specified in the xdc file!
-   // access our inouts properly as tri-state pins
-   IOBUF IOBUF_scl (.I(con_scl_o), .IO(i2c_scl), .O(con_scl_i), .T(con_scl_t) );
-   IOBUF IOBUF_sda (.I(con_sda_o), .IO(i2c_sda), .O(con_sda_i), .T(con_sda_t) );
 
-   // provided module to send data BRAM -> I2C
-   camera_registers crw
-     (.clk_in(clk_camera),
-      .rst_in(sys_rst_camera),
-      .init_valid(cr_init_valid),
-      .init_ready(cr_init_ready),
-      .scl_i(con_scl_i),
-      .scl_o(con_scl_o),
-      .scl_t(con_scl_t),
-      .sda_i(con_sda_i),
-      .sda_o(con_sda_o),
-      .sda_t(con_sda_t),
-      .bram_dout(registers_dout),
-      .bram_addr(registers_addr));
+    
 
-   // a handful of debug signals for writing to registers
-   assign led[0] = crw.bus_active;
-   assign led[1] = cr_init_valid;
-   assign led[2] = cr_init_ready;
-   assign led[15:3] = 0;
+
+    
+
+
 
 endmodule // top_level
 
 
-`default_nettype wire
+`default_ne
 

@@ -19,7 +19,6 @@ async def reset(rst,clk):
     rst.value = 1
     await ClockCycles(clk,3)
     rst.value = 0
-    # await ClockCycles(clk,2)
 
 # async def drive_mask_pixel_to_cm(dut,clk_in,x_in,y_in):
 #     """ submit a set of data values as input, then wait a clock cycle for them to stay there. """

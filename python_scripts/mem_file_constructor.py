@@ -4,7 +4,7 @@ import math
 def write_mem_data(filename: str, data_width: int, partition_width: int, depth: int, data: list[int]):
     """Create mem file using the mem file format
     Will place every data value in order of the list
-    - most relevant bit first
+    - least relevant bit first
     - each value will always occupy data_width size
     but will be partitioned by partition_width
     - (data_width / partition_width) must be an integer
@@ -69,6 +69,11 @@ if __name__ == "__main__":
     R = 2**4096
     # data = [305419896, 11111111111111110]
     # data = [int("0x1234567890abcdef", 16), int("0xfedcba09876543211234567890abcdef", 16)]
-    data = [R%N]
-    print(hex(data[0])) # expected data written to mem
-    write_mem_data("R_modN.mem", data_width=4096, partition_width=32, depth=128, data=data)
+    
+    # R mod N
+    # data = [R%N]
+    # print(hex(data[0])) # expected data written to mem
+    # write_mem_data("R_modN.mem", data_width=4096, partition_width=32, depth=128, data=data)
+
+    # n = pq
+    n = 24298603348542999239474744469072890490956354295641370729036981648708630343434725324552857951009931558546313766563870577924497779647807993675137391985388865972325629382224451115147388661855418295796796426092117412381873609522077928268569523964665547055712043997759152822443548229142496038633810462117915959965269710922465262548828341138509786372705797502294771830110882552969910298655546490669918353671710285533456039285707492948419069894361429814515896814459547808304401372368479975170068863943438080814679348043287738485812146166554250955487778956844544755844751992223318142581805914904219738103941508103889347156767
