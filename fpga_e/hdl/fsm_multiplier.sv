@@ -165,8 +165,8 @@ module fsm_multiplier  #(
             final_pipe2 <= 1'b0;
             final_out <= 1'b0;
             // ready_out <= 1'b1;
-            valid_out_pipe1 <= 1'b0;
-            valid_out <= 1'b0;
+            // valid_out_pipe1 <= 1'b0;
+            // valid_out <= 1'b0;
 
             lower_prod <= 0;
             upper_prod <= 0;
@@ -334,7 +334,7 @@ module fsm_multiplier  #(
 
     logic final_pipe1;
     logic final_pipe2;
-    logic valid_out_pipe1;
+    // logic valid_out_pipe1;
 
     always_comb begin
         // product (is stored in register above)
