@@ -28,15 +28,21 @@ module top_level
     end
     index <= index + 1; 
     rega <= r_squared[31:0];
-    r_squared <= r_squared>>1;
-    regb <= regb +2;
-    regc <= regc +3;
+    r_squared <= r_squared>>1 | start;
+    regb <= regb +2 + start;
+    regc <= regc +3 + start;
   end
 
   logic [31:0] result;
   logic valid_out;
   logic consumedk;
   logic consumedN;
+
+  logic extra1;
+  logic extra2;
+  logic extra3;
+  logic extra4;
+  logic final_out;
 
   montgomery_reduce  #(
     .REGISTER_SIZE(32),
@@ -58,14 +64,21 @@ module top_level
     .consumed_N_out(consumedN),
 
     .valid_out(valid_out),
-    .data_block_out(result)
+    .data_block_out(result),
+    .final_out(final_out),
+
+    .extra1(extra1),
+    .extra2(extra2),
+    .extra3(extra3),
+    .extra4(extra4)
   );
 
     always_ff @( posedge clk_100mhz ) begin 
       if (sys_rst)
         led <= 0;
       else
-        led <= valid_out ? result : led;
+        led[14:0] <= valid_out ? result : led[14:0];
+        led[15] <= extra1 | extra2 | final_out | extra3 | extra4;
     end
 
 

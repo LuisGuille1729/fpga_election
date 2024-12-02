@@ -23,7 +23,12 @@ module montgomery_reduce #(
 
     output logic valid_out,
     output logic [REGISTER_SIZE-1:0] data_block_out,
-    output logic final_out
+    output logic final_out,
+
+    output logic extra1,
+    output logic extra2,
+    output logic extra3,
+    output logic extra4
 );
 // For most use cases, modN_constant_block_in will be our n_squared
 
@@ -96,7 +101,10 @@ multiplier_TmodR_times_k
     .clk_in(clk_in),
 
     .data_out(Tk_product_block_value),
-    .valid_out(Tk_product_valid)
+    .valid_out(Tk_product_valid),
+
+    .final_out(extra1),
+    .ready_out(extra2)
 );
 
 // always_ff @( posedge clk_in ) begin
@@ -146,7 +154,10 @@ multiplier_m_times_N
     .clk_in(clk_in),
 
     .data_out(product_Mn_block),
-    .valid_out(product_Mn_valid)
+    .valid_out(product_Mn_valid),
+
+    .final_out(extra3),
+    .ready_out(extra4)
 );
 
 // (The following is assigned in the always_ff after the comparator)
