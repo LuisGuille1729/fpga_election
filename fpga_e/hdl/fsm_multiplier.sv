@@ -3,7 +3,7 @@
 // has a valid out signal and a last signal to showcase a finished addition. 
 module fsm_multiplier  #(
     parameter REGISTER_SIZE = 32,
-    parameter BITS_IN_NUM = 2048
+    parameter BITS_IN_NUM = 4096
     )
     (
         input wire [REGISTER_SIZE-1:0] n_in,
