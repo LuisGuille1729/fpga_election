@@ -336,6 +336,15 @@ module fsm_multiplier  #(
     logic final_pipe2;
     // logic valid_out_pipe1;
 
+    karatsuba_comb 
+    #(.REGISTER_SIZE(REGISTER_SIZE)) 
+    blocks_product
+    (
+        .x_in(n_m_bram_A_read_data_block),
+        .y_in(n_m_bram_B_read_data_block),
+        .data_out(product)
+    );
+
     always_comb begin
         // product (is stored in register above)
 
@@ -343,7 +352,7 @@ module fsm_multiplier  #(
         //             ? n_m_bram_A_read_data_block * n_m_bram_B_read_data_block
         //             : 0;
 
-        product = n_m_bram_A_read_data_block * n_m_bram_B_read_data_block;
+        // product = n_m_bram_A_read_data_block * n_m_bram_B_read_data_block;
 
         // add corresponding product blocks pairs
         prod_sum = lower_prod + prev_upper_prod + prev_prod_sum_carry;
@@ -352,8 +361,6 @@ module fsm_multiplier  #(
 
         // get updated accumulator block
         accumulator_sum = accumulator_bram_B_read_data_block_piped + prod_sum[REGISTER_SIZE-1:0] + prev_accumulator_sum_carry;
-        accumulator_sum_block = accumulator_sum[REGISTER_SIZE-1:0];
-        accumulator_sum_carry = accumulator_sum[REGISTER_SIZE];
 
         // Out data block
         data_out = accumulator_bram_B_read_data_block_piped;
@@ -362,6 +369,8 @@ module fsm_multiplier  #(
         ready_out = (state == IDLE);
 
     end
+    assign accumulator_sum_block = accumulator_sum[REGISTER_SIZE-1:0];
+    assign accumulator_sum_carry = accumulator_sum[REGISTER_SIZE];
 
 
 endmodule

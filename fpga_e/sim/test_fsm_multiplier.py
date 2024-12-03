@@ -160,7 +160,7 @@ async def  first_test(dut):
     # for num_1 in range(2**BITS_IN_NUM):
     #     await test_nums(dut,num_1,num_2)    
 
-REGISTER_SIZE = 32
+REGISTER_SIZE = 64
 BITS_IN_NUM = 4096
 BITS_IN_OUT = BITS_IN_NUM*2 # 8192
 BLOCKS_INPUT = BITS_IN_NUM//REGISTER_SIZE # 128
@@ -172,7 +172,7 @@ def test_runner():
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [proj_path / "hdl" / "fsm_multiplier.sv", proj_path / "hdl" / "pipeliner.sv", proj_path / "hdl" / "xilinx_true_dual_port_read_first_2_clock_ram.v",
-               proj_path / "hdl" / "mul_store.sv", proj_path / "hdl" / "accumulator.sv",]
+               proj_path / "hdl" / "mul_store.sv", proj_path / "hdl" / "accumulator.sv", proj_path / "hdl" / "karatsuba_comb.sv"]
     build_test_args = ["-Wall"]
     parameters = {"REGISTER_SIZE": REGISTER_SIZE, "BITS_IN_NUM": BITS_IN_NUM}
     sys.path.append(str(proj_path / "sim"))
