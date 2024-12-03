@@ -45,7 +45,7 @@ async def test_mem(dut, num_1, num_2):
     m_blocks = dispatch_blocks(num_2, BLOCKS_INPUT)
     
     dut.valid_in.value = 0
-    for _ in range(128):
+    for _ in range(BITS_IN_NUM//REGISTER_SIZE):
         await send_num(dut, next(n_blocks), next(m_blocks))
     
     await ClockCycles(dut.clk_in, 200)
@@ -56,10 +56,10 @@ async def test_product(dut, num_1, num_2):
     
     cycles = 0
     dut.valid_in.value = 0
-    for _ in range(128):
+    for _ in range(BITS_IN_NUM//REGISTER_SIZE):
         await send_num(dut, next(n_blocks), next(m_blocks))
     
-    cycles = 128
+    cycles = BITS_IN_NUM//REGISTER_SIZE
     
     while dut.valid_out.value == 0:
         cycles += 1
@@ -116,7 +116,7 @@ async def  first_test(dut):
 
     num1 = 0
     num2 = 0
-    for i in range(128):
+    for i in range(BITS_IN_NUM//REGISTER_SIZE):
         num1 += ((i+1 + 65536*4) << 32*i) 
         num2 += ((128-i + 65536*2) << 32*i)
     
@@ -138,8 +138,8 @@ async def  first_test(dut):
     await test_nums(dut,2,2**(BITS_IN_NUM-2))
 
     # Test with random numbers
-    num1 = random.randint(0, 2**4096-1)
-    num2 = random.randint(0, 2**4096-1)
+    num1 = random.randint(0, 2**BITS_IN_NUM-1)
+    num2 = random.randint(0, 2**BITS_IN_NUM-1)
     print(f"{num1.bit_length()}-bits times {num2.bit_length()}-bits")
     await test_product(dut, num1, num2)
     
@@ -160,8 +160,8 @@ async def  first_test(dut):
     # for num_1 in range(2**BITS_IN_NUM):
     #     await test_nums(dut,num_1,num_2)    
 
-REGISTER_SIZE = 64
-BITS_IN_NUM = 4096
+REGISTER_SIZE = 32
+BITS_IN_NUM = 2048
 BITS_IN_OUT = BITS_IN_NUM*2 # 8192
 BLOCKS_INPUT = BITS_IN_NUM//REGISTER_SIZE # 128
 BLOCKS_OUTPUT = BITS_IN_OUT//REGISTER_SIZE # 256
