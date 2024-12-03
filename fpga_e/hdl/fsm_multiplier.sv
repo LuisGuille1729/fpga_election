@@ -164,12 +164,6 @@ module fsm_multiplier  #(
             final_pipe1 <= 1'b0;
             final_pipe2 <= 1'b0;
             final_out <= 1'b0;
-            // ready_out <= 1'b1;
-            // valid_out_pipe1 <= 1'b0;
-            // valid_out <= 1'b0;
-
-            // lower_prod <= 0;
-            // upper_prod <= 0;
 
         end else begin
 
@@ -255,8 +249,6 @@ module fsm_multiplier  #(
                     // COMPUTING LOGIC (also see always_comb)
                     if (n_m_reading_valid_pipe2) begin
 
-                        // lower_prod <= product[REGISTER_SIZE-1:0];
-                        // upper_prod <= product[2*REGISTER_SIZE-1:REGISTER_SIZE];
                         product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block; 
                         
                         valid_product <= 1; // give an additional cycle to write the first product into the register
@@ -347,13 +339,8 @@ module fsm_multiplier  #(
     // );
 
     always_comb begin
-        // product (is stored in register above)
 
-        // product = (state == COMPUTING && n_m_reading_valid_pipe2)
-        //             ? n_m_bram_A_read_data_block * n_m_bram_B_read_data_block
-        //             : 0;
-
-        // product = n_m_bram_A_read_data_block * n_m_bram_B_read_data_block;
+        // (above we have: product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block )
         lower_prod = product[REGISTER_SIZE-1:0];
         upper_prod = product[2*REGISTER_SIZE-1:REGISTER_SIZE];
 
