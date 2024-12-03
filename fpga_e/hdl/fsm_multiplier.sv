@@ -208,10 +208,6 @@ module fsm_multiplier  #(
                 end
                 COMPUTING: begin
                     
-                    // For testing memory was written correctly and is being read correctly (uncomment below, and comment everything else)
-                    // n_m_bram_A_addr <= n_m_bram_A_addr + 1;
-                    // n_m_bram_B_addr <= n_m_bram_B_addr + 1;
-
                     // Pipes to know when reading n and m blocks and when it has stop
                     n_m_reading_valid_pipe1 <= n_m_reading_valid;
                     n_m_reading_valid_pipe2 <= n_m_reading_valid_pipe1; // (Correct delay when first data block received is valid)
@@ -219,8 +215,6 @@ module fsm_multiplier  #(
                     if (!n_m_reading_valid & !n_m_reading_valid_pipe1 & !n_m_reading_valid_pipe2 & !n_m_reading_valid_pipe3) begin // add extra pipe? Should only be 2 cycles
                         state <= OUTPUTING;
                         accumulator_bram_B_read_addr <= 0; 
-                        // accumulator_bram_A_write_addr <= 0;
-                        // accumulator_bram_A_write_data_block <= 0;
                     end
 
                     // Pipes to know accumulator write address corresponding to accumulator write block
@@ -269,7 +263,6 @@ module fsm_multiplier  #(
                     if (final_out) begin
                         state <= IDLE;
                         final_out <= 1'b0;
-                        // ready_out <= 1'b1;
 
                     end else if (accumulator_bram_B_read_addr == BRAM_DEPTH-1) begin
                         final_pipe1 <= 1'b1;
@@ -282,16 +275,6 @@ module fsm_multiplier  #(
                         // clean the block
                         accumulator_bram_A_write_addr <= accumulator_bram_A_write_addr + 1'b1;
                         accumulator_bram_A_write_data_block <= 0;
-
-                        
-                        // valid_out_pipe1 <= 1'b1;
-                        // valid_out <= valid_out_pipe1;   
-                        // in always_comb:
-                        // data_out = accumulator_bram_B_read_data_block;
-                        // valid_out = STATE==OUTPUTING
-
-                        
-
                     end
 
                 end
@@ -327,17 +310,6 @@ module fsm_multiplier  #(
 
     logic final_pipe1;
     logic final_pipe2;
-    // logic valid_out_pipe1;
-
-    // karatsuba_comb 
-    // #(.REGISTER_SIZE(REGISTER_SIZE)) 
-    // blocks_product
-    // (
-    //     .x_in(n_m_bram_A_read_data_block),
-    //     .y_in(n_m_bram_B_read_data_block),
-    //     .data_out(product)
-    // );
-
     always_comb begin
 
         // (above we have: product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block )
@@ -346,8 +318,6 @@ module fsm_multiplier  #(
 
         // add corresponding product blocks pairs
         prod_sum = lower_prod + prev_upper_prod + prev_prod_sum_carry;
-        // prod_sum_block = n_m_sum[REGISTER_SIZE-1:0];
-        // prod_sum_carry = n_m_sum[REGISTER_SIZE];    // this will be stored
 
         // get updated accumulator block
         accumulator_sum = accumulator_bram_B_read_data_block_piped + prod_sum[REGISTER_SIZE-1:0] + prev_accumulator_sum_carry;
