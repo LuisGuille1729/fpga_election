@@ -292,16 +292,10 @@ module fsm_multiplier  #(
     logic [REGISTER_SIZE-1:0] lower_prod;
     logic [REGISTER_SIZE-1:0] upper_prod;
 
-    logic [BRAM_DEPTH-1:0] n_m_bram_A_addr_pipe1;
-    logic [BRAM_DEPTH-1:0] n_m_bram_B_addr_pipe1;
-
-
     logic [REGISTER_SIZE-1:0] prev_upper_prod;
     logic prev_prod_sum_carry;
 
     logic [REGISTER_SIZE:0] prod_sum;
-    logic [REGISTER_SIZE-1:0] prod_sum_block;
-    logic prod_sum_carry;
 
     logic [REGISTER_SIZE:0] accumulator_sum;
     logic [REGISTER_SIZE-1:0] accumulator_sum_block;
