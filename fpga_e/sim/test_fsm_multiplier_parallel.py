@@ -172,7 +172,7 @@ def test_runner():
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [proj_path / "hdl" / "fsm_multiplier_parallel.sv", proj_path / "hdl" / "pipeliner.sv", proj_path / "hdl" / "xilinx_true_dual_port_read_first_2_clock_ram.v",
-               proj_path / "hdl" / "mul_store.sv", proj_path / "hdl" / "accumulator.sv", proj_path / "hdl" / "karatsuba_comb.sv"]
+               proj_path / "hdl" / "mul_store.sv", proj_path / "hdl" / "accumulator.sv"]
     build_test_args = ["-Wall"]
     parameters = {"REGISTER_SIZE_IN": REGISTER_SIZE_IN, "BITS_IN_NUM": BITS_IN_NUM}
     sys.path.append(str(proj_path / "sim"))
