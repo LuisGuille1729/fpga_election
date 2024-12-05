@@ -51,7 +51,7 @@ def check_for_block_request(dut, k_dispatcher, n_squared_dispatcher, n_dispatche
         dut.n_bit_in.value = next(n_dispatcher)
     
 
-REGISTER_SIZE = 1024
+REGISTER_SIZE = 32
 OUT_NUM_BLOCKS = 4096//REGISTER_SIZE
 
 BITS_IN_NUM = 4096
@@ -164,6 +164,7 @@ def test_runner():
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [proj_path / "hdl" / "montgomery_reduce.sv",
+                proj_path / "hdl" / "montgomery_reduce_parallel.sv", # parallel
                
                proj_path / "hdl" / "bram_blocks_rw.sv",
                proj_path / "hdl" / "evt_counter.sv",
@@ -172,6 +173,7 @@ def test_runner():
                proj_path / "hdl" / "modulo_of_power.sv",
                
                proj_path / "hdl" / "fsm_multiplier.sv",
+               proj_path / "hdl" / "fsm_multiplier_parallel.sv", # parallel
                proj_path / "hdl" / "mul_store.sv",
                proj_path / "hdl" / "accumulator.sv", 
                proj_path / "hdl" / "pipeliner.sv", 

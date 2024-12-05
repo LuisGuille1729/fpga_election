@@ -74,8 +74,8 @@ module montgomery_squarer_stream #(
 
     logic multiplier_valid_out;
     logic [REGISTER_SIZE-1:0] multiplier_block_out;
-    fsm_multiplier #(
-        .REGISTER_SIZE(REGISTER_SIZE),
+    fsm_multiplier_parallel #(
+        .REGISTER_SIZE_IN(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_OUT)
     ) squarer_stream_multiplier (
         .n_in(reduced_square_out),
@@ -91,7 +91,7 @@ module montgomery_squarer_stream #(
 
     logic reducer_valid_out;
     logic [REGISTER_SIZE-1:0] reducer_block_out;
-    montgomery_reduce #(
+    montgomery_reduce_parallel #(
         .REGISTER_SIZE(REGISTER_SIZE),
         .NUM_BLOCKS(2 * NUM_BLOCKS_IN_OUT),
         .R(R)

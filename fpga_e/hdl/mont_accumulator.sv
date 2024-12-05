@@ -9,7 +9,7 @@ module mont_accumulator #(
     input wire clk_in,
     input wire rst_in,
     input wire valid_in,
-    input wire  n_bit_in,   // the number we want to reduce
+    input wire  n_bit_in,   
     input wire [REGISTER_SIZE-1:0] n_squared_in,
     input wire [REGISTER_SIZE-1:0] k_in,
     input wire [REGISTER_SIZE-1:0] squarer_streamer_in, 
@@ -71,11 +71,11 @@ module mont_accumulator #(
             endcase
         end      
     end
-    fsm_multiplier#(
-        .REGISTER_SIZE(REGISTER_SIZE),
+    fsm_multiplier_parallel#(
+        .REGISTER_SIZE_IN(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_NUM)
     )
-    markiplier
+    markiplier // iron lung?
     (
         .n_in(a_in),
         .m_in(b_in),
@@ -90,7 +90,7 @@ module mont_accumulator #(
 
     logic mont_valid;
 
-    montgomery_reduce#(
+    montgomery_reduce_parallel#(
         .REGISTER_SIZE(REGISTER_SIZE),
         .NUM_BLOCKS(NUM_BLOCKS),
         .R(4096)
