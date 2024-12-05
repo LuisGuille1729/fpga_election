@@ -10,6 +10,18 @@ from cocotb.triggers import Timer
 from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 
+test_parallel = True
+file_name = "montgomery_reduce_parallel" if test_parallel else "montgomery_reduce"
+
+REGISTER_SIZE = 32
+T_NUM_BLOCKS = 8192//REGISTER_SIZE
+OUT_NUM_BLOCKS = 4096//REGISTER_SIZE
+
+test_edges = True
+test_our_N = True
+test_arbitrary_N = True
+test_detailled = False
+
 # import sys
 # sys.path.append("../../python_scripts")
 # from montgomery_demo import calculate_bezout_constants
@@ -117,11 +129,7 @@ async def test_reduction_outputs(dut, T, N, P, global_k_dispatcher, global_N_dis
     # print(f"Passed with T = {T}")
     
     return T_NUM_BLOCKS + calculating_cycles + output_cycles
-    
 
-REGISTER_SIZE = 32
-T_NUM_BLOCKS = 8192//REGISTER_SIZE
-OUT_NUM_BLOCKS = 4096//REGISTER_SIZE
 
 @cocotb.test()
 async def testing(dut):   
@@ -159,11 +167,6 @@ async def testing(dut):
     global_N_dispatcher = dispatch_blocks(N_stress, OUT_NUM_BLOCKS)   
     dut.k_constant_block_in.value = next(global_k_dispatcher)
     dut.modN_constant_block_in.value = next(global_N_dispatcher)
-    
-    test_edges = True
-    test_our_N = True
-    test_arbitrary_N = True
-    test_detailled = False
     
     if test_edges:
         print("Test edge cases with our n_squared")
@@ -412,7 +415,7 @@ def test_runner():
     sim = os.getenv("SIM", "icarus")
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
-    sources = [proj_path / "hdl" / "montgomery_reduce.sv",
+    sources = [proj_path / "hdl" / (file_name + ".sv"),
                
                proj_path / "hdl" / "bram_blocks_rw.sv",
                proj_path / "hdl" / "evt_counter.sv",
@@ -421,8 +424,8 @@ def test_runner():
                proj_path / "hdl" / "modulo_of_power.sv",
                
                proj_path / "hdl" / "fsm_multiplier.sv",
-               proj_path / "hdl" / "mul_store.sv",
-               proj_path / "hdl" / "accumulator.sv", 
+               proj_path / "hdl" / "fsm_multiplier_parallel.sv",
+               
                proj_path / "hdl" / "pipeliner.sv", 
                
                proj_path / "hdl" / "great_adder.sv", 
@@ -438,7 +441,7 @@ def test_runner():
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="montgomery_reduce",
+        hdl_toplevel=file_name,
         always=True,
         build_args=build_test_args,
         parameters=parameters,
@@ -447,7 +450,7 @@ def test_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="montgomery_reduce",
+        hdl_toplevel=file_name,
         test_module="test_montgomery_reduce",
         test_args=run_test_args,
         waves=False
