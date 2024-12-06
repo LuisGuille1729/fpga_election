@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Thu Dec  5 16:10:41 2024
+# Process ID: 2318
+# Current directory: /home/fpga/worker_place/temp/4079f6ca626242cba67e5004618fdb05
+# Command line: vivado -mode batch -source build.tcl
+# Log file: /home/fpga/worker_place/temp/4079f6ca626242cba67e5004618fdb05/vivado.log
+# Journal file: /home/fpga/worker_place/temp/4079f6ca626242cba67e5004618fdb05/vivado.jou
+# Running On        :eecs-digital-47
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 24.04.1 LTS
+# Processor Detail  :AMD Ryzen 7 2700X Eight-Core Processor
+# CPU Frequency     :3197.060 MHz
+# CPU Physical cores:8
+# CPU Logical cores :16
+# Host memory       :16688 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20983 MB
+# Available Virtual :20018 MB
+#-----------------------------------------------------------
+source build.tcl
