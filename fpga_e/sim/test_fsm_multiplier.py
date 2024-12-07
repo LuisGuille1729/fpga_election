@@ -160,7 +160,7 @@ async def  first_test(dut):
     # for num_1 in range(2**BITS_IN_NUM):
     #     await test_nums(dut,num_1,num_2)    
 
-REGISTER_SIZE = 32
+REGISTER_SIZE = 64
 BITS_IN_NUM = 4096
 BITS_IN_OUT = BITS_IN_NUM*2 # 8192
 BLOCKS_INPUT = BITS_IN_NUM//REGISTER_SIZE # 128
