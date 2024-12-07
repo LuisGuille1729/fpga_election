@@ -71,8 +71,8 @@ module mont_accumulator #(
             endcase
         end      
     end
-    fsm_multiplier_parallel#(
-        .REGISTER_SIZE_IN(REGISTER_SIZE),
+    fsm_multiplier#(
+        .REGISTER_SIZE(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_NUM)
     )
     markiplier // iron lung?
@@ -90,10 +90,10 @@ module mont_accumulator #(
 
     logic mont_valid;
 
-    montgomery_reduce_parallel#(
+    montgomery_reduce#(
         .REGISTER_SIZE(REGISTER_SIZE),
         .NUM_BLOCKS(NUM_BLOCKS),
-        .R(4096)
+        .R(R)
     ) monty_gatorade (
         .clk_in(clk_in),
         .rst_in(rst_in),
@@ -152,9 +152,9 @@ module mont_accumulator #(
                     cycles_between_sends<=1;
                     accum_state <= first_accum;
                     store_idx <= store_idx + 1;
+                    addra <= addra + 1;
                 end 
                 consumed_n_out <= 0;
-                addra <= addra + 1;
             end
             first_accum: begin
                 if (valid_in) begin

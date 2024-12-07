@@ -1,7 +1,7 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
-module fsm_multiplier_copy  #(
+module fsm_multiplier_original  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 2048
     )
