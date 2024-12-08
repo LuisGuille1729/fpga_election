@@ -15,7 +15,12 @@ module top_level
     output logic [2:0] rgb1, // RGB channels of RGB LED1
     output logic [15:0] led,
 
-    output logic uart_txd
+    output logic uart_txd,
+
+    input wire cipo,
+    output logic dclk,
+    output logic copi,
+    output logic cs
   );
 
   localparam BAUD_RATE = 9600;
@@ -25,7 +30,7 @@ module top_level
   logic start;
   assign start = btn[1];
 
-  assign led = sw;
+  // assign led = sw;
 
   logic previous_start;
   logic trigger_uart_send;
@@ -48,6 +53,11 @@ module top_level
     .busy_out(uart_busy),
     .tx_wire_out(uart_txd)
   );
+
+  // 
+
+
+
 
 
   
