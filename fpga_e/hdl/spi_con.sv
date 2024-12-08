@@ -15,7 +15,8 @@ module spi_con
        output logic chip_data_out, //(COPI)
        input wire   chip_data_in, //(CIPO)
        output logic chip_clk_out, //(DCLK)
-       output logic chip_sel_out // (CS)
+       output logic chip_sel_out, // (CS)
+       output logic ready_out
       );
 
   // ensure that CLK_PERIOD is even. e.g. 39 -> 38
@@ -49,6 +50,7 @@ module spi_con
 
       // Begin transfer
       if (trigger_in && !began_transferring) begin // triggered, record data_in, begin transfer
+       ready_out <= 0;
         began_transferring <= 1'b1;
         transfer_stage <= 1 << (DATA_WIDTH-1);
 
@@ -87,6 +89,7 @@ module spi_con
 
     if (data_valid_out) begin
       data_valid_out <= 1'b0;
+      ready_out <= 1;
     end
 
     end // else not rst_in
