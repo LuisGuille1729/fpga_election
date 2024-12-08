@@ -16,7 +16,7 @@ module montgomery_squarer_stream #(
     output logic consumed_k_out,
     output logic consumed_N_out,
 
-    output logic [BITS_IN_OUT-1:0] reduced_square_out,
+    output logic [REGISTER_SIZE-1:0] reduced_square_out,
     output logic squared_valid_out
 );
 
@@ -36,18 +36,11 @@ module montgomery_squarer_stream #(
             reduced_square_out = 0;
             squared_valid_out = 0;
             reset_multiplier = 1;
-            multiplier_blocked = 0;
         end
         else begin
             reduced_square_out = data_valid_in ? reduced_modulo_block_in : reducer_block_out;
             squared_valid_out = data_valid_in | reducer_valid_out;
             reset_multiplier = (block_ctr == NUM_BLOCKS_IN_OUT - 1) && (square_exponent_ctr == HIGHEST_EXPONENT - 1);
-            if (multiplier_blocked & data_valid_in) begin
-                multiplier_blocked = 0;
-            end
-            else if (reset_multiplier) begin
-                multiplier_blocked = 1;
-            end
         end
     end
 
@@ -55,11 +48,16 @@ module montgomery_squarer_stream #(
         if (rst_in) begin
             block_ctr <= 0;
             square_exponent_ctr <= 0;
+            multiplier_blocked <= 0;
         end
         else if (squared_valid_out) begin
+            if (data_valid_in) begin
+                multiplier_blocked <= 0;  // Once we get a new input, unblock the multiplier from a previously completed input
+            end
             if (block_ctr == NUM_BLOCKS_IN_OUT - 1) begin
                 block_ctr <= 0;
                 if (square_exponent_ctr == HIGHEST_EXPONENT - 1) begin
+                    multiplier_blocked <= 1;  // Last iteration, so block multiplier - it'll also be reset
                     square_exponent_ctr <= 0;
                 end
                 else if (~data_valid_in) begin
@@ -80,7 +78,8 @@ module montgomery_squarer_stream #(
     ) squarer_stream (
         .n_in(reduced_square_out),
         .m_in(reduced_square_out),
-        .valid_in(squared_valid_out & (~multiplier_blocked)),
+        // data_valid_in should always override the multiplier being blocked from a last input (since we're dealing with a new input)
+        .valid_in(squared_valid_out & (~multiplier_blocked | data_valid_in)),
         .rst_in(reset_multiplier),
         .clk_in(clk_in),
         .data_out(multiplier_block_out),
