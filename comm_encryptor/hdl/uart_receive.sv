@@ -28,7 +28,7 @@ module uart_receive
 
   logic [7:0] data_received;
 
-  always @(posedge clk_in ) begin
+  always_ff @(posedge clk_in ) begin
 
     // Make new_data_out single cycle
     if (new_data_out) begin
@@ -94,10 +94,6 @@ module uart_receive
       end else begin
         cycles_counter <= cycles_counter + 1;
       end
-
-
-      
-
 
     end
   end

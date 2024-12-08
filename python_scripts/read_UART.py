@@ -11,5 +11,5 @@ def read_UART():
     return ser.read()
 
 while True:
-    # time.sleep(0.1)
+    time.sleep(0.1)
     print(ser.read(1))
