@@ -100,9 +100,8 @@ end
 logic [REGISTER_SIZE-1:0] spi_data_received;
 logic valid_data_received;
 
-spi_rec #(
-      .DATA_WIDTH(REGISTER_SIZE),
-      .DATA_CLK_PERIOD(100)
+spi_pe #(
+      .DATA_WIDTH(REGISTER_SIZE)
       )
       spi_receiver
       (
