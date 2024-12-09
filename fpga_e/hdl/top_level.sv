@@ -6,6 +6,7 @@ module top_level
     input wire          clk_100mhz,
     input wire          [2:0] btn,
     input wire 				 uart_rxd,
+
     output logic [0:0] copi,
     output logic [0:0] dclk,
     output logic [0:0] cs
@@ -44,43 +45,40 @@ module top_level
   logic [NUM_K_BLOCKS-1:0][REGISTER_SIZE-1:0] k;
 
 
-// old verilog constructs for usage of readmemh. No workarounds from our knowledge :( 
-reg [REGISTER_SIZE-1:0] temp_array_n[NUM_N_BLOCKS-1:0];
-reg [REGISTER_SIZE-1:0] temp_array_n_squared[NUM_N_SQUARED_BLOCKS-1:0];
-reg [REGISTER_SIZE-1:0] temp_array_k[NUM_N_SQUARED_BLOCKS-1:0];
+  // old verilog constructs for usage of readmemh. No workarounds from our knowledge :( 
+  reg [REGISTER_SIZE-1:0] temp_array_n[NUM_N_BLOCKS-1:0];
+  reg [REGISTER_SIZE-1:0] temp_array_n_squared[NUM_N_SQUARED_BLOCKS-1:0];
+  reg [REGISTER_SIZE-1:0] temp_array_k[NUM_N_SQUARED_BLOCKS-1:0];
 
-initial begin
-    $readmemh("n.mem", temp_array_n); // Read into the temporary array
-    for (int i = 0; i < NUM_N_BLOCKS; i++) begin
-        n[i] = temp_array_n[i];          // Map values to the multi-dimensional array
-    end
-    $readmemh("n_squared.mem", temp_array_n_squared); // Read into the temporary array
-    $readmemh("k.mem", temp_array_k); // Read into the temporary array
-    for (int i = 0; i < NUM_N_SQUARED_BLOCKS; i++) begin
-        n_squared[i] = temp_array_n_squared[i];          // Map values to the multi-dimensional array
-        k[i] = temp_array_k[i];
-    end
+  initial begin
+      $readmemh("n.mem", temp_array_n); // Read into the temporary array
+      for (int i = 0; i < NUM_N_BLOCKS; i++) begin
+          n[i] = temp_array_n[i];          // Map values to the multi-dimensional array
+      end
+      $readmemh("n_squared.mem", temp_array_n_squared); // Read into the temporary array
+      $readmemh("k.mem", temp_array_k); // Read into the temporary array
+      for (int i = 0; i < NUM_N_SQUARED_BLOCKS; i++) begin
+          n_squared[i] = temp_array_n_squared[i];          // Map values to the multi-dimensional array
+          k[i] = temp_array_k[i];
+      end
 
-end
+  end
 
   
 
-
-
-  logic used_bit;
-  pipeliner  #(
+  logic uart_rxd_piped2;
+  pipeliner #(
     .PIPELINE_STAGE_COUNT(2),
     .DATA_BIT_SIZE(1)
-    )
+  ) uart_pipeline
     (
         .clk_in(clk_100mhz),
         .rst_in(sys_rst),
         .data_in(uart_rxd),
-        .data_out(used_bit)
+        .data_out(uart_rxd_piped2)
     );
 
   // UART Receive
-  // We are assuming we are receiving the bits in lsb first order
   logic valid_data;
   logic [7:0] data_received_byte;
 
@@ -91,7 +89,7 @@ end
   (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
-    .rx_wire_in(used_bit), 
+    .rx_wire_in(uart_rxd_piped2), 
     .new_data_out(valid_data),
     .data_byte_out(data_received_byte)
   );
@@ -113,7 +111,7 @@ always_ff @( posedge clk_100mhz ) begin
     case (vote_procesor_states)
       IDLE: vote_procesor_states <= begin_processing? TRIGGERED: IDLE;
       TRIGGERED: vote_procesor_states <= TERMINAL; 
-      TERMINAL:  restart_processor? IDLE: TERMINAL;
+      TERMINAL: vote_procesor_states <= restart_processor? IDLE: TERMINAL;
     endcase
   end
 end
@@ -165,7 +163,8 @@ end
     .REGISTER_SIZE(REGISTER_SIZE),
     .BITS_IN_NUM(N_SQUARED_SIZE),
     .R(4096)
-) (
+  ) expo 
+(
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
 
@@ -195,7 +194,8 @@ candidate_encryptor  #(
     .REGISTER_SIZE(REGISTER_SIZE),
     .BITS_IN_NUM(N_SQUARED_SIZE),
     .R(4096)
-) (
+) encryptorator
+ (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .n_squared_in(candidate_n_squared_in),
@@ -223,7 +223,7 @@ redstone_repeater #(
 
         .data_in(candidate_parsed_data_out),
         .data_valid_in(candidate_valid),
-        .request_next_input(request_next_repeater_input),
+        .prev_data_consumed_in(request_next_repeater_input),
         .data_out(storage_read),
         .data_valid_out(storage_valid)
     );

@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Mon Oct 28 10:58:42 2024
-| Host         : eecs-digital-09 running 64-bit Ubuntu 24.04.1 LTS
+| Date         : Mon Dec  9 17:14:43 2024
+| Host         : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
 | Command      : report_drc -file obj/post_imp_drc.rpt
 | Design       : top_level
 | Device       : xc7s50csga324-1
@@ -24,18 +24,193 @@ Table of Contents
       Design limits: <entire design considered>
            Ruledeck: default
              Max violations: <unlimited>
-             Violations found: 1
-+-----------+----------+-------------------+------------+
-| Rule      | Severity | Description       | Violations |
-+-----------+----------+-------------------+------------+
-| RTSTAT-10 | Warning  | No routable loads | 1          |
-+-----------+----------+-------------------+------------+
+             Violations found: 36
++--------+----------+------------------+------------+
+| Rule   | Severity | Description      | Violations |
++--------+----------+------------------+------------+
+| DPIP-1 | Warning  | Input pipelining | 36         |
++--------+----------+------------------+------------+
 
 2. REPORT DETAILS
 -----------------
-RTSTAT-10#1 Warning
-No routable loads  
-1 net(s) have no routable loads. The problem bus(es) and/or net(s) are cdc_fifo/U0/inst_fifo_gen/gconvfifo.rf/grf.rf/gntv_or_sync_fifo.gl0.wr/gwas.wsts/ram_full_i.
+DPIP-1#1 Warning
+Input pipelining  
+DSP encryptorator/vote_1_caster/product0 input encryptorator/vote_1_caster/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#2 Warning
+Input pipelining  
+DSP encryptorator/vote_1_caster/product0__0 input encryptorator/vote_1_caster/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#3 Warning
+Input pipelining  
+DSP encryptorator/vote_1_caster/product_reg input encryptorator/vote_1_caster/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#4 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product0 input encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#5 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product0__0 input encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#6 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product_reg input encryptorator/vote_1_reducer/multiplier_TmodR_times_k/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#7 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_m_times_N/product0 input encryptorator/vote_1_reducer/multiplier_m_times_N/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#8 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_m_times_N/product0__0 input encryptorator/vote_1_reducer/multiplier_m_times_N/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#9 Warning
+Input pipelining  
+DSP encryptorator/vote_1_reducer/multiplier_m_times_N/product_reg input encryptorator/vote_1_reducer/multiplier_m_times_N/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#10 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/markiplier/product0 input expo/result_computer/mont_accumulator_inst/markiplier/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#11 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/markiplier/product0__0 input expo/result_computer/mont_accumulator_inst/markiplier/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#12 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/markiplier/product_reg input expo/result_computer/mont_accumulator_inst/markiplier/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#13 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product0 input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#14 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product0__0 input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#15 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product_reg input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_TmodR_times_k/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#16 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product0 input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#17 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product0__0 input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#18 Warning
+Input pipelining  
+DSP expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product_reg input expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#19 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#20 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product0__0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#21 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product_reg input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#22 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#23 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product0__0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#24 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product_reg input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#25 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#26 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0__0 input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#27 Warning
+Input pipelining  
+DSP expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg input expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#28 Warning
+Input pipelining  
+DSP expo/stage_1/product0 input expo/stage_1/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#29 Warning
+Input pipelining  
+DSP expo/stage_1/product0__0 input expo/stage_1/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#30 Warning
+Input pipelining  
+DSP expo/stage_1/product_reg input expo/stage_1/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#31 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_TmodR_times_k/product0 input expo/stage_2/multiplier_TmodR_times_k/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#32 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_TmodR_times_k/product0__0 input expo/stage_2/multiplier_TmodR_times_k/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#33 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_TmodR_times_k/product_reg input expo/stage_2/multiplier_TmodR_times_k/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#34 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_m_times_N/product0 input expo/stage_2/multiplier_m_times_N/product0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#35 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_m_times_N/product0__0 input expo/stage_2/multiplier_m_times_N/product0__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#36 Warning
+Input pipelining  
+DSP expo/stage_2/multiplier_m_times_N/product_reg input expo/stage_2/multiplier_m_times_N/product_reg/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
 Related violations: <none>
 
 

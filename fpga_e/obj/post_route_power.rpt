@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version     : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date             : Mon Oct 28 10:58:42 2024
-| Host             : eecs-digital-09 running 64-bit Ubuntu 24.04.1 LTS
+| Date             : Mon Dec  9 17:14:42 2024
+| Host             : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
 | Command          : report_power -file obj/post_route_power.rpt
 | Design           : top_level
 | Device           : xc7s50csga324-1
@@ -30,14 +30,14 @@ Table of Contents
 ----------
 
 +--------------------------+--------------+
-| Total On-Chip Power (W)  | 0.542        |
+| Total On-Chip Power (W)  | 0.274        |
 | Design Power Budget (W)  | Unspecified* |
 | Power Budget Margin (W)  | NA           |
-| Dynamic (W)              | 0.466        |
-| Device Static (W)        | 0.075        |
+| Dynamic (W)              | 0.200        |
+| Device Static (W)        | 0.073        |
 | Effective TJA (C/W)      | 4.9          |
-| Max Ambient (C)          | 82.3         |
-| Junction Temperature (C) | 27.7         |
+| Max Ambient (C)          | 83.6         |
+| Junction Temperature (C) | 26.4         |
 | Confidence Level         | Low          |
 | Setting File             | ---          |
 | Simulation Activity File | ---          |
@@ -49,26 +49,23 @@ Table of Contents
 1.1 On-Chip Components
 ----------------------
 
-+-------------------------+-----------+----------+-----------+-----------------+
-| On-Chip                 | Power (W) | Used     | Available | Utilization (%) |
-+-------------------------+-----------+----------+-----------+-----------------+
-| Clocks                  |     0.017 |       10 |       --- |             --- |
-| Slice Logic             |     0.021 |     8006 |       --- |             --- |
-|   LUT as Logic          |     0.018 |     3402 |     32600 |           10.44 |
-|   CARRY4                |     0.002 |      578 |      8150 |            7.09 |
-|   Register              |    <0.001 |     2777 |     65200 |            4.26 |
-|   LUT as Shift Register |    <0.001 |       36 |      9600 |            0.38 |
-|   F7/F8 Muxes           |    <0.001 |       45 |     32600 |            0.14 |
-|   Others                |     0.000 |      264 |       --- |             --- |
-| Signals                 |     0.029 |     7031 |       --- |             --- |
-| Block RAM               |     0.046 |     47.5 |        75 |           63.33 |
-| MMCM                    |     0.105 |        1 |         5 |           20.00 |
-| PLL                     |     0.101 |        1 |         5 |           20.00 |
-| DSPs                    |     0.002 |        8 |       120 |            6.67 |
-| I/O                     |     0.144 |       85 |       210 |           40.48 |
-| Static Power            |     0.075 |          |           |                 |
-| Total                   |     0.542 |          |           |                 |
-+-------------------------+-----------+----------+-----------+-----------------+
++----------------+-----------+----------+-----------+-----------------+
+| On-Chip        | Power (W) | Used     | Available | Utilization (%) |
++----------------+-----------+----------+-----------+-----------------+
+| Clocks         |     0.015 |        3 |       --- |             --- |
+| Slice Logic    |     0.023 |     9633 |       --- |             --- |
+|   LUT as Logic |     0.018 |     3705 |     32600 |           11.37 |
+|   CARRY4       |     0.003 |      486 |      8150 |            5.96 |
+|   Register     |     0.001 |     4132 |     65200 |            6.34 |
+|   F7/F8 Muxes  |    <0.001 |       32 |     32600 |            0.10 |
+|   Others       |     0.000 |      237 |       --- |             --- |
+| Signals        |     0.038 |    11428 |       --- |             --- |
+| Block RAM      |     0.085 |       23 |        75 |           30.67 |
+| DSPs           |     0.040 |       48 |       120 |           40.00 |
+| I/O            |    <0.001 |        8 |       210 |            3.81 |
+| Static Power   |     0.073 |          |           |                 |
+| Total          |     0.274 |          |           |                 |
++----------------+-----------+----------+-----------+-----------------+
 
 
 1.2 Power Supply Summary
@@ -77,16 +74,16 @@ Table of Contents
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 | Source    | Voltage (V) | Total (A) | Dynamic (A) | Static (A) | Powerup (A) | Budget (A)  | Margin (A) |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
-| Vccint    |       1.000 |     0.132 |       0.120 |      0.012 |       NA    | Unspecified | NA         |
-| Vccaux    |       1.800 |     0.124 |       0.112 |      0.013 |       NA    | Unspecified | NA         |
-| Vcco33    |       3.300 |     0.044 |       0.043 |      0.001 |       NA    | Unspecified | NA         |
+| Vccint    |       1.000 |     0.207 |       0.196 |      0.011 |       NA    | Unspecified | NA         |
+| Vccaux    |       1.800 |     0.013 |       0.000 |      0.013 |       NA    | Unspecified | NA         |
+| Vcco33    |       3.300 |     0.001 |       0.000 |      0.001 |       NA    | Unspecified | NA         |
 | Vcco25    |       2.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco18    |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco15    |       1.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco135   |       1.350 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco12    |       1.200 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vccaux_io |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
-| Vccbram   |       1.000 |     0.005 |       0.003 |      0.001 |       NA    | Unspecified | NA         |
+| Vccbram   |       1.000 |     0.005 |       0.004 |      0.001 |       NA    | Unspecified | NA         |
 | Vccadc    |       1.800 |     0.020 |       0.000 |      0.020 |       NA    | Unspecified | NA         |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 
@@ -128,18 +125,11 @@ Table of Contents
 2.2 Clock Constraints
 ---------------------
 
-+--------------------+----------------------------------+-----------------+
-| Clock              | Domain                           | Constraint (ns) |
-+--------------------+----------------------------------+-----------------+
-| clk_100_cw_fast    | wizard_migcam/clk_100_cw_fast    |            10.0 |
-| clk_camera_cw_fast | wizard_migcam/clk_camera_cw_fast |             5.0 |
-| clk_pixel_cw_hdmi  | wizard_hdmi/clk_pixel_cw_hdmi    |            13.5 |
-| clk_tmds_cw_hdmi   | wizard_hdmi/clk_tmds_cw_hdmi     |             2.7 |
-| clk_xc_cw_fast     | wizard_migcam/clk_xc_cw_fast     |            40.0 |
-| clkfbout_cw_fast   | wizard_migcam/clkfbout_cw_fast   |            10.0 |
-| clkfbout_cw_hdmi   | wizard_hdmi/clkfbout_cw_hdmi     |            50.0 |
-| gclk               | clk_100mhz                       |            10.0 |
-+--------------------+----------------------------------+-----------------+
++-------+------------+-----------------+
+| Clock | Domain     | Constraint (ns) |
++-------+------------+-----------------+
+| gclk  | clk_100mhz |            10.0 |
++-------+------------+-----------------+
 
 
 3. Detailed Reports
@@ -148,71 +138,34 @@ Table of Contents
 3.1 By Hierarchy
 ----------------
 
-+----------------------------------+-----------+
-| Name                             | Power (W) |
-+----------------------------------+-----------+
-| top_level                        |     0.466 |
-|   IOBUF_sda                      |     0.003 |
-|   cdc_fifo                       |     0.004 |
-|     U0                           |     0.004 |
-|       inst_fifo_gen              |     0.004 |
-|   com_m                          |     0.002 |
-|   crw                            |     0.003 |
-|     sccb_c                       |     0.002 |
-|   ds_lbuff                       |     0.007 |
-|     genblk1[2].line_buffer_ram   |     0.002 |
-|     hc_pipeliner                 |     0.002 |
-|   filtern                        |     0.018 |
-|     m_lbuff                      |     0.013 |
-|       genblk1[0].line_buffer_ram |     0.003 |
-|       genblk1[1].line_buffer_ram |     0.003 |
-|       genblk1[2].line_buffer_ram |     0.003 |
-|       genblk1[3].line_buffer_ram |     0.003 |
-|     mconv                        |     0.005 |
-|   frame_buffer                   |     0.012 |
-|     U0                           |     0.012 |
-|       inst_blk_mem_gen           |     0.012 |
-|   genblk1[0].filterm             |     0.005 |
-|     m_lbuff                      |     0.004 |
-|   genblk1[1].filterm             |     0.008 |
-|     m_lbuff                      |     0.005 |
-|       genblk1[0].line_buffer_ram |     0.001 |
-|       genblk1[1].line_buffer_ram |     0.001 |
-|       genblk1[2].line_buffer_ram |     0.001 |
-|       genblk1[3].line_buffer_ram |     0.001 |
-|     mconv                        |     0.003 |
-|   genblk1[2].filterm             |     0.007 |
-|     m_lbuff                      |     0.004 |
-|       genblk1[0].line_buffer_ram |     0.001 |
-|       genblk1[2].line_buffer_ram |     0.001 |
-|       genblk1[3].line_buffer_ram |     0.001 |
-|     mconv                        |     0.003 |
-|   genblk1[3].filterm             |     0.010 |
-|     m_lbuff                      |     0.005 |
-|       genblk1[0].line_buffer_ram |     0.001 |
-|       genblk1[1].line_buffer_ram |     0.001 |
-|       genblk1[2].line_buffer_ram |     0.001 |
-|       genblk1[3].line_buffer_ram |     0.001 |
-|     mconv                        |     0.005 |
-|   genblk1[4].filterm             |     0.009 |
-|     m_lbuff                      |     0.004 |
-|       genblk1[0].line_buffer_ram |     0.001 |
-|       genblk1[1].line_buffer_ram |     0.001 |
-|       genblk1[2].line_buffer_ram |     0.001 |
-|       genblk1[3].line_buffer_ram |     0.001 |
-|     mconv                        |     0.005 |
-|   genblk1[5].filterm             |     0.010 |
-|     m_lbuff                      |     0.005 |
-|       genblk1[0].line_buffer_ram |     0.001 |
-|       genblk1[1].line_buffer_ram |     0.001 |
-|       genblk1[2].line_buffer_ram |     0.001 |
-|       genblk1[3].line_buffer_ram |     0.001 |
-|     mconv                        |     0.005 |
-|   rgbtoycrcb_m                   |     0.003 |
-|   vsg                            |     0.009 |
-|     v_counter                    |     0.008 |
-|   wizard_hdmi                    |     0.105 |
-|   wizard_migcam                  |     0.102 |
-+----------------------------------+-----------+
++--------------------------------------+-----------+
+| Name                                 | Power (W) |
++--------------------------------------+-----------+
+| top_level                            |     0.200 |
+|   encryptorator                      |     0.047 |
+|     vote_1_caster                    |     0.011 |
+|       accumulator_bram               |     0.002 |
+|       n_m_bram                       |     0.002 |
+|     vote_1_reducer                   |     0.036 |
+|       T_blocks_BRAM                  |     0.001 |
+|       multiplier_TmodR_times_k       |     0.015 |
+|       multiplier_m_times_N           |     0.014 |
+|       product_Mn_block_pipeline      |     0.001 |
+|       t_result_blocks_BRAM           |     0.003 |
+|   expo                               |     0.148 |
+|     result_computer                  |     0.101 |
+|       mont_accumulator_inst          |     0.051 |
+|       montgomery_squarer_stream_inst |     0.050 |
+|     stage_1                          |     0.017 |
+|       accumulator_bram               |     0.003 |
+|       n_m_bram                       |     0.005 |
+|     stage_2                          |     0.031 |
+|       multiplier_TmodR_times_k       |     0.012 |
+|       multiplier_m_times_N           |     0.013 |
+|       product_Mn_block_pipeline      |     0.002 |
+|       t_result_blocks_BRAM           |     0.002 |
+|   spi_storage                        |     0.002 |
+|     encryptor_bram                   |     0.002 |
++--------------------------------------+-----------+
 
 

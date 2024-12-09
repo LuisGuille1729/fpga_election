@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Mon Oct 28 10:58:18 2024
-| Host         : eecs-digital-09 running 64-bit Ubuntu 24.04.1 LTS
+| Date         : Mon Dec  9 17:14:15 2024
+| Host         : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
 | Command      : report_timing -file obj/post_synth_timing.rpt
 | Design       : top_level
 | Device       : 7s50-csga324
@@ -12,121 +12,66 @@ Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanc
 
 Timing Report
 
-Slack (VIOLATED) :        -0.079ns  (required time - arrival time)
-  Source:                 genblk1[5].filterm/mconv/products_blue_reg[0][0][11]/C
-                            (rising edge-triggered cell FDRE clocked by clk_pixel_cw_hdmi  {rise@0.000ns fall@6.734ns period=13.468ns})
-  Destination:            genblk1[5].filterm/mconv/sum_blue_reg[19]/D
-                            (rising edge-triggered cell FDRE clocked by clk_pixel_cw_hdmi  {rise@0.000ns fall@6.734ns period=13.468ns})
-  Path Group:             clk_pixel_cw_hdmi
+Slack (MET) :             1.126ns  (required time - arrival time)
+  Source:                 expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram_A_addr_reg[5]/C
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Destination:            expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg__0/PCIN[0]
+                            (rising edge-triggered cell DSP48E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Path Group:             gclk
   Path Type:              Setup (Max at Slow Process Corner)
-  Requirement:            13.468ns  (clk_pixel_cw_hdmi rise@13.468ns - clk_pixel_cw_hdmi rise@0.000ns)
-  Data Path Delay:        13.254ns  (logic 7.888ns (59.514%)  route 5.366ns (40.486%))
-  Logic Levels:           17  (CARRY4=12 LUT2=5)
+  Requirement:            10.000ns  (gclk rise@10.000ns - gclk rise@0.000ns)
+  Data Path Delay:        7.294ns  (logic 4.911ns (67.332%)  route 2.383ns (32.668%))
+  Logic Levels:           3  (DSP48E1=1 LUT4=1 LUT6=1)
   Clock Path Skew:        -0.145ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    -2.578ns = ( 10.890 - 13.468 ) 
-    Source Clock Delay      (SCD):    -2.892ns
-    Clock Pessimism Removal (CPR):    -0.459ns
-  Clock Uncertainty:      0.210ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+    Destination Clock Delay (DCD):    2.660ns = ( 12.660 - 10.000 ) 
+    Source Clock Delay      (SCD):    2.920ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
-    Discrete Jitter          (DJ):    0.414ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
     Phase Error              (PE):    0.000ns
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
-                         (clock clk_pixel_cw_hdmi rise edge)
-                                                      0.000     0.000 r  
+                         (clock gclk rise edge)       0.000     0.000 r  
     N15                                               0.000     0.000 r  clk_100mhz (IN)
-                         net (fo=0)                   0.000     0.000    wizard_migcam/clk_100mhz
-    N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  wizard_migcam/clkin1_ibufg/O
-                         net (fo=1, unplaced)         0.584     2.024    wizard_migcam/clk_in1_cw_fast
-                         PLLE2_ADV (Prop_plle2_adv_CLKIN1_CLKOUT0)
-                                                     -6.612    -4.587 r  wizard_migcam/plle2_adv_inst/CLKOUT0
-                         net (fo=1, unplaced)         0.800    -3.788    wizard_migcam/clk_100_cw_fast
-                         BUFG (Prop_bufg_I_O)         0.096    -3.692 r  wizard_migcam/clkout1_buf/O
-                         net (fo=1, unplaced)         0.584    -3.108    wizard_hdmi/clk_100
-                         MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
-                                                     -1.480    -4.587 r  wizard_hdmi/mmcm_adv_inst/CLKOUT0
-                         net (fo=1, unplaced)         0.800    -3.788    wizard_hdmi/clk_pixel_cw_hdmi
-                         BUFG (Prop_bufg_I_O)         0.096    -3.692 r  wizard_hdmi/clkout1_buf/O
-                         net (fo=2767, unplaced)      0.800    -2.892    genblk1[5].filterm/mconv/clk_pixel
-                         FDRE                                         r  genblk1[5].filterm/mconv/products_blue_reg[0][0][11]/C
+                         net (fo=0)                   0.000     0.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, unplaced)         0.800     2.240    clk_100mhz_IBUF
+                         BUFG (Prop_bufg_I_O)         0.096     2.336 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=4162, unplaced)      0.584     2.920    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/clk_100mhz_IBUF_BUFG
+                         FDRE                                         r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram_A_addr_reg[5]/C
   -------------------------------------------------------------------    -------------------
-                         FDRE (Prop_fdre_C_Q)         0.456    -2.436 r  genblk1[5].filterm/mconv/products_blue_reg[0][0][11]/Q
-                         net (fo=9, unplaced)         1.024    -1.412    genblk1[5].filterm/mconv/products_blue_reg_n_0_[0][0][11]
-                         CARRY4 (Prop_carry4_S[3]_CO[3])
-                                                      0.697    -0.715 r  genblk1[5].filterm/mconv/sum_blue_reg[8]_i_15/CO[3]
-                         net (fo=1, unplaced)         0.000    -0.715    genblk1[5].filterm/mconv/sum_blue_reg[8]_i_15_n_0
-                         CARRY4 (Prop_carry4_CI_O[0])
-                                                      0.235    -0.480 r  genblk1[5].filterm/mconv/sum_blue_reg[8]_i_14/O[0]
-                         net (fo=1, unplaced)         0.983     0.503    genblk1[5].filterm/mconv/sum_blue_reg[8]_i_14_n_7
-                         CARRY4 (Prop_carry4_S[3]_CO[3])
-                                                      0.697     1.200 r  genblk1[5].filterm/mconv/sum_blue_reg[8]_i_12/CO[3]
-                         net (fo=1, unplaced)         0.000     1.200    genblk1[5].filterm/mconv/sum_blue_reg[8]_i_12_n_0
-                         CARRY4 (Prop_carry4_CI_O[0])
-                                                      0.235     1.435 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_44/O[0]
-                         net (fo=1, unplaced)         0.664     2.099    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_44_n_7
-                         CARRY4 (Prop_carry4_S[1]_O[2])
-                                                      0.873     2.972 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_31/O[2]
-                         net (fo=3, unplaced)         0.470     3.442    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_31_n_5
-                         LUT2 (Prop_lut2_I1_O)        0.301     3.743 r  genblk1[5].filterm/mconv/sum_blue[19]_i_36/O
-                         net (fo=1, unplaced)         0.000     3.743    genblk1[5].filterm/mconv/sum_blue[19]_i_36_n_0
-                         CARRY4 (Prop_carry4_S[3]_CO[3])
-                                                      0.401     4.144 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_23/CO[3]
-                         net (fo=1, unplaced)         0.009     4.153    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_23_n_0
-                         CARRY4 (Prop_carry4_CI_O[0])
-                                                      0.235     4.388 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_19/O[0]
-                         net (fo=3, unplaced)         0.488     4.876    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_19_n_7
-                         LUT2 (Prop_lut2_I0_O)        0.295     5.171 r  genblk1[5].filterm/mconv/sum_blue[19]_i_26/O
-                         net (fo=1, unplaced)         0.000     5.171    genblk1[5].filterm/mconv/sum_blue[19]_i_26_n_0
-                         CARRY4 (Prop_carry4_S[1]_O[3])
-                                                      0.640     5.811 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_12/O[3]
-                         net (fo=3, unplaced)         0.636     6.447    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_12_n_4
-                         LUT2 (Prop_lut2_I1_O)        0.307     6.754 r  genblk1[5].filterm/mconv/sum_blue[16]_i_21/O
-                         net (fo=1, unplaced)         0.000     6.754    genblk1[5].filterm/mconv/sum_blue[16]_i_21_n_0
-                         CARRY4 (Prop_carry4_S[3]_CO[3])
-                                                      0.401     7.155 r  genblk1[5].filterm/mconv/sum_blue_reg[16]_i_9/CO[3]
-                         net (fo=1, unplaced)         0.000     7.155    genblk1[5].filterm/mconv/sum_blue_reg[16]_i_9_n_0
-                         CARRY4 (Prop_carry4_CI_O[1])
-                                                      0.348     7.503 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_6/O[1]
-                         net (fo=3, unplaced)         0.629     8.132    genblk1[5].filterm/mconv/sum_blue_reg[19]_i_6_n_6
-                         LUT2 (Prop_lut2_I0_O)        0.306     8.438 r  genblk1[5].filterm/mconv/sum_blue[19]_i_9/O
-                         net (fo=1, unplaced)         0.000     8.438    genblk1[5].filterm/mconv/sum_blue[19]_i_9_n_0
-                         CARRY4 (Prop_carry4_S[1]_O[2])
-                                                      0.580     9.018 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_2/O[2]
-                         net (fo=2, unplaced)         0.463     9.481    genblk1[5].filterm/mconv/C[18]
-                         LUT2 (Prop_lut2_I1_O)        0.301     9.782 r  genblk1[5].filterm/mconv/sum_blue[19]_i_4__1/O
-                         net (fo=1, unplaced)         0.000     9.782    genblk1[5].filterm/mconv/sum_blue[19]_i_4__1_n_0
-                         CARRY4 (Prop_carry4_S[1]_O[2])
-                                                      0.580    10.362 r  genblk1[5].filterm/mconv/sum_blue_reg[19]_i_1/O[2]
-                         net (fo=1, unplaced)         0.000    10.362    genblk1[5].filterm/mconv/sum_blue0[19]
-                         FDRE                                         r  genblk1[5].filterm/mconv/sum_blue_reg[19]/D
+                         FDRE (Prop_fdre_C_Q)         0.456     3.376 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram_A_addr_reg[5]/Q
+                         net (fo=9, unplaced)         1.006     4.382    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram_A_addr_reg_n_0_[5]
+                         LUT6 (Prop_lut6_I0_O)        0.295     4.677 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0_i_16__1/O
+                         net (fo=34, unplaced)        0.522     5.199    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram/product_reg
+                         LUT4 (Prop_lut4_I0_O)        0.124     5.323 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram/product0__0_i_1__1/O
+                         net (fo=1, unplaced)         0.800     6.123    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/n_m_bram_A_read_data_block[16]
+                         DSP48E1 (Prop_dsp48e1_A[16]_PCOUT[0])
+                                                      4.036    10.159 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0__0/PCOUT[0]
+                         net (fo=1, unplaced)         0.055    10.214    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product0__0_n_153
+                         DSP48E1                                      r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg__0/PCIN[0]
   -------------------------------------------------------------------    -------------------
 
-                         (clock clk_pixel_cw_hdmi rise edge)
-                                                     13.468    13.468 r  
-    N15                                               0.000    13.468 r  clk_100mhz (IN)
-                         net (fo=0)                   0.000    13.468    wizard_migcam/clk_100mhz
-    N15                  IBUF (Prop_ibuf_I_O)         1.370    14.838 r  wizard_migcam/clkin1_ibufg/O
-                         net (fo=1, unplaced)         0.439    15.277    wizard_migcam/clk_in1_cw_fast
-                         PLLE2_ADV (Prop_plle2_adv_CLKIN1_CLKOUT0)
-                                                     -5.893     9.384 r  wizard_migcam/plle2_adv_inst/CLKOUT0
-                         net (fo=1, unplaced)         0.760    10.144    wizard_migcam/clk_100_cw_fast
-                         BUFG (Prop_bufg_I_O)         0.091    10.235 r  wizard_migcam/clkout1_buf/O
-                         net (fo=1, unplaced)         0.439    10.674    wizard_hdmi/clk_100
-                         MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
-                                                     -1.290     9.384 r  wizard_hdmi/mmcm_adv_inst/CLKOUT0
-                         net (fo=1, unplaced)         0.760    10.144    wizard_hdmi/clk_pixel_cw_hdmi
-                         BUFG (Prop_bufg_I_O)         0.091    10.235 r  wizard_hdmi/clkout1_buf/O
-                         net (fo=2767, unplaced)      0.655    10.890    genblk1[5].filterm/mconv/clk_pixel
-                         FDRE                                         r  genblk1[5].filterm/mconv/sum_blue_reg[19]/C
-                         clock pessimism             -0.459    10.431    
-                         clock uncertainty           -0.210    10.221    
-                         FDRE (Setup_fdre_C_D)        0.062    10.283    genblk1[5].filterm/mconv/sum_blue_reg[19]
+                         (clock gclk rise edge)      10.000    10.000 r  
+    N15                                               0.000    10.000 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000    10.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.370    11.370 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, unplaced)         0.760    12.130    clk_100mhz_IBUF
+                         BUFG (Prop_bufg_I_O)         0.091    12.221 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=4162, unplaced)      0.439    12.660    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/clk_100mhz_IBUF_BUFG
+                         DSP48E1                                      r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg__0/CLK
+                         clock pessimism              0.115    12.775    
+                         clock uncertainty           -0.035    12.740    
+                         DSP48E1 (Setup_dsp48e1_CLK_PCIN[0])
+                                                     -1.400    11.340    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_m_times_N/product_reg__0
   -------------------------------------------------------------------
-                         required time                         10.283    
-                         arrival time                         -10.362    
+                         required time                         11.340    
+                         arrival time                         -10.214    
   -------------------------------------------------------------------
-                         slack                                 -0.079    
+                         slack                                  1.126    
 
 
 

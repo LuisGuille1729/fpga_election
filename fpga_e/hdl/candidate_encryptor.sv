@@ -32,7 +32,7 @@ always_comb begin
    long_valid = candidate_in && valid_in;
    data_out = candidate_in? true_casted_data: exponentiator_in;
    valid_out = casted_valid || (valid_in && (~candidate_in));
-   consumed_candidate_out =  was_valid && (!valid_out);
+   consumed_vote_out =  was_valid && (!valid_out);
 end
 
 
