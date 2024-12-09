@@ -39,10 +39,6 @@ module mont_accumulator #(
     localparam BLOCKS_TO_SEND = BITS_IN_NUM / REGISTER_SIZE;
     localparam NUM_BLOCKS = 2*BITS_IN_NUM / REGISTER_SIZE;
     localparam BITS_IN_N = 2048;   
-    logic [REGISTER_SIZE-1:0] visual_dif;
-    assign visual_dif = a_in-b_in;
-    logic b_is_input;
-    assign b_is_input = b_in == squarer_streamer_in;
     
     //addresses to read from 2 clock cycles in future
     logic [ADDR_WIDTH-1:0]     addra;

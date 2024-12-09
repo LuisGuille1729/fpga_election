@@ -5,8 +5,9 @@ module top_level
   (
     input wire          clk_100mhz,
     input wire          [1:0] btn,
+
     output wire 				 uart_txd,
-    output logic [0:0] copi,
+    input logic [0:0] copi,
     output logic [0:0] dclk,
     output logic [0:0] cs
   );
@@ -58,11 +59,6 @@ enum {VOTING, RESULTS} load_states;
 
 
 
-
-  // CONSTANTS INITIALIZATION:
-  // logic [$clog2(NUM_N_BLOCKS)-1:0][REGISTER_SIZE-1:0] n;
-  // logic [$clog2(NUM_N_SQUARED_BLOCKS)-1:0][REGISTER_SIZE-1:0] n_squared; 
-  // logic [$clog2(NUM_K_BLOCKS)-1:0][REGISTER_SIZE-1:0] k;
   logic [NUM_N_BLOCKS-1:0][REGISTER_SIZE-1:0] n;
   logic [NUM_N_SQUARED_BLOCKS-1:0][REGISTER_SIZE-1:0] n_squared; 
   logic [NUM_K_BLOCKS-1:0][REGISTER_SIZE-1:0] k;
@@ -113,9 +109,9 @@ spi_rec #(
         .data_out(spi_data_received), //data received!
         .data_valid_out(valid_data_received), //high when output data is present.
  
-        .chip_data_out(copi), //(serial dout preferably)
+        .chip_data_in(copi), //(serial dout preferably)
         // todo fix these ports later
-        .chip_data_in(), //(serial din preferably)
+        .chip_data_out(), //(serial din preferably)
         .chip_clk_out(),
         .chip_sel_out(),
         .ready_out()
