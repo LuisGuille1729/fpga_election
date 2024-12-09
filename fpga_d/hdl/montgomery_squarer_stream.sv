@@ -16,60 +16,57 @@ module montgomery_squarer_stream #(
     output logic consumed_k_out,
     output logic consumed_N_out,
 
-    output logic [BITS_IN_OUT-1:0] reduced_square_out,
-    output logic squared_valid_out,
-    output logic ready_out
+    output logic [REGISTER_SIZE-1:0] reduced_square_out,
+    output logic squared_valid_out
 );
 
-    localparam BITS_IN_OUT = 2 * BITS_IN_NUM;  // 2*BITS_IN_NUM bit output from montgomery passed into multiplier, passed into montgomery
-    localparam NUM_BLOCKS = 2 * BITS_IN_OUT / REGISTER_SIZE;
-    localparam HIGHEST_EXPONENT = $clog2(BITS_IN_NUM);
+    localparam BITS_IN_OUT = 2 * BITS_IN_NUM;  // 2*BITS_IN_NUM bit output from montgomery passed into multiplier
+    localparam NUM_BLOCKS_IN_OUT = BITS_IN_OUT / REGISTER_SIZE;
+    localparam HIGHEST_EXPONENT = BITS_IN_NUM;
+    localparam BITS_IN_EXPONENT = $clog2(HIGHEST_EXPONENT);
 
-    logic [$clog2(NUM_BLOCKS)-1:0] block_ctr;
-    logic [$clog2(HIGHEST_EXPONENT)-1:0] square_exponent_ctr;
+    logic [$clog2(NUM_BLOCKS_IN_OUT)-1:0] block_ctr;
+    logic [BITS_IN_EXPONENT-1:0] square_exponent_ctr;
     logic [REGISTER_SIZE-1:0] squared_modulo_block;
-    logic valid_data;
-    logic initial_state;
+    logic reset_multiplier;
+    logic multiplier_blocked;
 
-    assign valid_data = (data_valid_in & initial_state) | reducer_valid_out;
-    assign squared_modulo_block = data_valid_in ? reduced_modulo_block_in : reducer_block_out;
-
-    assign reduced_square_out = rst_in ? 0 : squared_modulo_block;
-    assign squared_valid_out = rst_in ? 0 : valid_data;  // TODO - Keep initial_state as a bit rather than enum?
+    always_comb begin
+        if (rst_in) begin
+            reduced_square_out = 0;
+            squared_valid_out = 0;
+            reset_multiplier = 1;
+        end
+        else begin
+            reduced_square_out = data_valid_in ? reduced_modulo_block_in : reducer_block_out;
+            squared_valid_out = data_valid_in | reducer_valid_out;
+            reset_multiplier = (block_ctr == NUM_BLOCKS_IN_OUT - 1) && (square_exponent_ctr == HIGHEST_EXPONENT - 1);
+        end
+    end
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
-            initial_state <= 1;
             block_ctr <= 0;
             square_exponent_ctr <= 0;
-
-            // squared_valid_out <= 0;
-            ready_out <= 1;
+            multiplier_blocked <= 0;
         end
-        else if ((data_valid_in & initial_state) | reducer_valid_out) begin
-            // squared_valid_out <= 1;
-            if (block_ctr == NUM_BLOCKS - 1) begin
+        else if (squared_valid_out) begin
+            if (data_valid_in) begin
+                multiplier_blocked <= 0;  // Once we get a new input, unblock the multiplier from a previously completed input
+            end
+            if (block_ctr == NUM_BLOCKS_IN_OUT - 1) begin
                 block_ctr <= 0;
-                square_exponent_ctr <= (square_exponent_ctr == HIGHEST_EXPONENT - 1) ? 0 : square_exponent_ctr + 1;
                 if (square_exponent_ctr == HIGHEST_EXPONENT - 1) begin
+                    multiplier_blocked <= 1;  // Last iteration, so block multiplier - it'll also be reset
                     square_exponent_ctr <= 0;
-                    initial_state <= 1;
-                    ready_out <= 1;
                 end
-                else begin
+                else if (~data_valid_in) begin
                     square_exponent_ctr <= square_exponent_ctr + 1;
-                    initial_state <= 0;
-                    ready_out <= 0;
                 end
             end
             else begin
                 block_ctr <= block_ctr + 1;
-                ready_out <= 0;
             end
-        end
-        else begin
-            // squared_valid_out <= 0;
-            ready_out <= 0;
         end
     end
 
@@ -78,12 +75,12 @@ module montgomery_squarer_stream #(
     fsm_multiplier #(
         .REGISTER_SIZE(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_OUT)
-    ) squarer_stream_multiplier (
+    ) squarer_stream (
         .n_in(reduced_square_out),
         .m_in(reduced_square_out),
-        // .valid_in((initial_state & data_valid_in) | ((~initial_state) & reducer_valid_out)),
-        .valid_in(data_valid_in | (reducer_valid_out & ~ready_out)),  // Ready out is high when the squarer is done iterating and is awaiting a new input
-        .rst_in(rst_in),
+        // data_valid_in should always override the multiplier being blocked from a last input (since we're dealing with a new input)
+        .valid_in(squared_valid_out & (~multiplier_blocked | data_valid_in)),
+        .rst_in(reset_multiplier),
         .clk_in(clk_in),
         .data_out(multiplier_block_out),
         .valid_out(multiplier_valid_out),
@@ -95,7 +92,7 @@ module montgomery_squarer_stream #(
     logic [REGISTER_SIZE-1:0] reducer_block_out;
     montgomery_reduce #(
         .REGISTER_SIZE(REGISTER_SIZE),
-        .NUM_BLOCKS(NUM_BLOCKS),
+        .NUM_BLOCKS(2 * NUM_BLOCKS_IN_OUT),
         .R(R)
     ) squarer_stream_reducer (
         .clk_in(clk_in),

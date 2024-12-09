@@ -4,7 +4,7 @@
 // NOTE: k_constant_block_in and modN_constant_block_in MUST behave as expected in top level:
 // Must be initialized to first block whenever valid_in is 1
 // Every time a consumed signal is outputted, in the NEXT cycle give the next block
-module montgomery_reduce #(
+module montgomery_reduce_parallel #(
     parameter REGISTER_SIZE = 32,
     parameter NUM_BLOCKS = 256,
     parameter R = 4096
@@ -82,8 +82,8 @@ modulo_of_power #(
 // Multiplier: T%R * k
 logic [REGISTER_SIZE-1:0] Tk_product_block_value;
 logic Tk_product_valid;
-fsm_multiplier #(
-    .REGISTER_SIZE(REGISTER_SIZE),
+fsm_multiplier_parallel #(
+    .REGISTER_SIZE_IN(REGISTER_SIZE),
     .BITS_IN_NUM(CONSTANT_SIZE)
 )
 multiplier_TmodR_times_k
@@ -132,8 +132,8 @@ modulo_of_power #(
 // Multiplier m * N
 logic product_Mn_valid;
 logic [REGISTER_SIZE-1:0] product_Mn_block;
-fsm_multiplier #(
-    .REGISTER_SIZE(REGISTER_SIZE),
+fsm_multiplier_parallel #(
+    .REGISTER_SIZE_IN(REGISTER_SIZE),
     .BITS_IN_NUM(CONSTANT_SIZE)
 )
 multiplier_m_times_N
@@ -175,10 +175,10 @@ product_Mn_block_pipeline
     .data_out(product_Mn_block_piped)
 );
 
-logic  product_Mn_valid_piped;
+logic [REGISTER_SIZE-1:0] product_Mn_valid_piped;
 pipeliner #(
     .PIPELINE_STAGE_COUNT(2),
-    .DATA_BIT_SIZE(1)
+    .DATA_BIT_SIZE(REGISTER_SIZE)
 )
 product_Mn_valid_pipeline
 (

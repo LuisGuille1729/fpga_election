@@ -1,13 +1,18 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
-module fsm_multiplier  #(
+
+`ifdef SYNTHESIS
+`define FPATH(X) `"X`"
+`else /* ! SYNTHESIS */
+`define FPATH(X) `"../../data/X`"
+`endif  /* ! SYNTHESIS */
+module candidate_multiplier  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096
     )
     (
         input wire [REGISTER_SIZE-1:0] n_in,
-        input wire [REGISTER_SIZE-1:0] m_in,
         input wire valid_in,
         input wire rst_in,
         input wire clk_in,
@@ -36,13 +41,13 @@ module fsm_multiplier  #(
 
     // Port B
     logic [ADDR_WIDTH-1:0] n_m_bram_B_addr;
-    logic [BRAM_WIDTH-1:0] n_m_bram_B_write_data_block;
     logic [BRAM_WIDTH-1:0] n_m_bram_B_read_data_block;
 
     xilinx_true_dual_port_read_first_2_clock_ram
     #(
         .RAM_WIDTH(REGISTER_SIZE),
-        .RAM_DEPTH(BRAM_DEPTH))
+        .RAM_DEPTH(BRAM_DEPTH),
+        .INIT_FILE(`FPATH(GR_modN.mem)))     
     n_m_bram
         (
         // PORT A - store n
@@ -56,9 +61,9 @@ module fsm_multiplier  #(
         .douta(n_m_bram_A_read_data_block_true_value),
         // PORT B - store m
         .addrb(n_m_bram_B_addr),
-        .dinb(n_m_bram_B_write_data_block),
+        .dinb(),
         .clkb(clk_in),
-        .web(state == WRITING), 
+        .web(0), 
         .enb(1'b1),
         .rstb(rst_in),
         .regceb(state == COMPUTING),
@@ -134,7 +139,6 @@ module fsm_multiplier  #(
     logic n_m_reading_valid_pipe1;
     logic n_m_reading_valid_pipe2;
     logic n_m_reading_valid_pipe3;
-    
 
     always_ff @( posedge clk_in ) begin
         
@@ -143,7 +147,6 @@ module fsm_multiplier  #(
             n_m_bram_A_addr <= 0;
             n_m_bram_A_write_data_block <= 0;
             n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
-            n_m_bram_B_write_data_block <= 0;
             
             n_m_reading_valid <= 0;
             n_m_reading_valid_pipe1 <= 0;
@@ -175,7 +178,6 @@ module fsm_multiplier  #(
                         state <= WRITING;
 
                         n_m_bram_A_write_data_block <= n_in;
-                        n_m_bram_B_write_data_block <= m_in; 
 
                     end
                 end
@@ -186,7 +188,6 @@ module fsm_multiplier  #(
                     n_m_bram_A_write_data_block <= n_in;
 
                     n_m_bram_B_addr <= n_m_bram_B_addr + 1;
-                    n_m_bram_B_write_data_block <= m_in;  
 
                     // Clean top BRAM
                     accumulator_bram_A_write_addr <= accumulator_bram_A_write_addr + 1;
@@ -289,7 +290,7 @@ module fsm_multiplier  #(
 
     // COMPUTING COMBINATIONAL LOGIC AND WIRES/REGS DECLARATIONS
     logic valid_product;
-    logic [(2*REGISTER_SIZE)-1:0] product;
+    logic [2*REGISTER_SIZE-1:0] product;
     logic [REGISTER_SIZE-1:0] lower_prod;
     logic [REGISTER_SIZE-1:0] upper_prod;
 

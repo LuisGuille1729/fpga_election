@@ -1,7 +1,7 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
-module fsm_multiplier  #(
+module fsm_multiplier_nonparallel  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096
     )
@@ -134,7 +134,6 @@ module fsm_multiplier  #(
     logic n_m_reading_valid_pipe1;
     logic n_m_reading_valid_pipe2;
     logic n_m_reading_valid_pipe3;
-    
 
     always_ff @( posedge clk_in ) begin
         
@@ -289,7 +288,7 @@ module fsm_multiplier  #(
 
     // COMPUTING COMBINATIONAL LOGIC AND WIRES/REGS DECLARATIONS
     logic valid_product;
-    logic [(2*REGISTER_SIZE)-1:0] product;
+    logic [2*REGISTER_SIZE-1:0] product;
     logic [REGISTER_SIZE-1:0] lower_prod;
     logic [REGISTER_SIZE-1:0] upper_prod;
 

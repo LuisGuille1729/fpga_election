@@ -1,22 +1,23 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
-module fsm_multiplier  #(
-    parameter REGISTER_SIZE = 32,
+module fsm_multiplier_parallel  #(
+    parameter REGISTER_SIZE_IN = 32,
     parameter BITS_IN_NUM = 4096
     )
     (
-        input wire [REGISTER_SIZE-1:0] n_in,
-        input wire [REGISTER_SIZE-1:0] m_in,
+        input wire [REGISTER_SIZE_IN-1:0] n_in,
+        input wire [REGISTER_SIZE_IN-1:0] m_in,
         input wire valid_in,
         input wire rst_in,
         input wire clk_in,
-        output logic [REGISTER_SIZE-1:0] data_out,
+        output logic [REGISTER_SIZE_IN-1:0] data_out,
         output logic valid_out,
         output logic final_out,
         output logic ready_out
     );
 
+    localparam REGISTER_SIZE = REGISTER_SIZE_IN*2;
     localparam BRAM_WIDTH = REGISTER_SIZE;
     localparam BRAM_REGION_SIZE = BITS_IN_NUM / BRAM_WIDTH; // 4096/32 = 128
     localparam BRAM_DEPTH = 2 * BRAM_REGION_SIZE;   // Twice since product can double amount of bits
@@ -134,16 +135,28 @@ module fsm_multiplier  #(
     logic n_m_reading_valid_pipe1;
     logic n_m_reading_valid_pipe2;
     logic n_m_reading_valid_pipe3;
-    
+
+    logic block_loaded;
+    logic [REGISTER_SIZE_IN-1:0] last_n_block_in;
+    logic [REGISTER_SIZE_IN-1:0] last_m_block_in;
+    assign n_m_bram_A_write_data_block = (n_in << REGISTER_SIZE_IN) | last_n_block_in;
+    assign n_m_bram_B_write_data_block = (m_in << REGISTER_SIZE_IN) | last_m_block_in; 
+    logic finalize_writing_next_cycle;
+    logic computing_done;
+    logic computing_done_pipe1;
+    logic computing_done_pipe2;
+    logic computing_done_pipe3;
+    logic computing_done_pipe4;
+
 
     always_ff @( posedge clk_in ) begin
         
         if (rst_in || (!valid_in && state == IDLE)) begin
             state <= IDLE;
             n_m_bram_A_addr <= 0;
-            n_m_bram_A_write_data_block <= 0;
+            // n_m_bram_A_write_data_block <= 0;
             n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
-            n_m_bram_B_write_data_block <= 0;
+            // n_m_bram_B_write_data_block <= 0;
             
             n_m_reading_valid <= 0;
             n_m_reading_valid_pipe1 <= 0;
@@ -166,6 +179,20 @@ module fsm_multiplier  #(
             final_pipe2 <= 1'b0;
             final_out <= 1'b0;
 
+            block_loaded <= 1'b0;
+            last_m_block_in <= 0;
+            last_n_block_in <= 0;
+            bab_z0 <= 0;
+            bab_z1_a <= 0;
+            bab_z1_b <= 0;
+            bab_z2 <= 0;
+            finalize_writing_next_cycle <= 0;
+            computing_done <= 0;
+            computing_done_pipe1 <= 0;
+            computing_done_pipe2 <= 0;
+            computing_done_pipe3 <= 0;
+            computing_done_pipe4 <= 0;
+
         end else begin
 
             case (state)
@@ -174,19 +201,40 @@ module fsm_multiplier  #(
                     if (valid_in) begin
                         state <= WRITING;
 
-                        n_m_bram_A_write_data_block <= n_in;
-                        n_m_bram_B_write_data_block <= m_in; 
+                        
+                        // n_m_bram_A_write_data_block <= n_in; // do this combinationally instead
+                        // n_m_bram_B_write_data_block <= m_in;
+                        last_n_block_in <= n_in;
+                        last_m_block_in <= m_in;
+                        block_loaded <= 1'b1;
 
                     end
                 end
                 WRITING: begin
                     // Write n and m into BRAM
-                    if (valid_in) begin
-                    n_m_bram_A_addr <= n_m_bram_A_addr + 1;
-                    n_m_bram_A_write_data_block <= n_in;
+                    if (finalize_writing_next_cycle) begin
+                        state <= COMPUTING;
 
-                    n_m_bram_B_addr <= n_m_bram_B_addr + 1;
-                    n_m_bram_B_write_data_block <= m_in;  
+                        n_m_bram_A_addr <= 0;
+                        n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
+
+                        n_m_reading_valid <= 1;
+
+                        accumulator_bram_A_write_addr <= 0;
+                        block_loaded <= 1'b0;
+                    end
+                    else if (valid_in) begin
+                    block_loaded <= !block_loaded;
+
+                    last_n_block_in <= n_in;
+                    last_m_block_in <= m_in;
+
+
+                    n_m_bram_A_addr <= (block_loaded) ? n_m_bram_A_addr + 1 : n_m_bram_A_addr; // write to next address if got the previous blocks
+                    // n_m_bram_A_write_data_block <= n_in; // do this combinationally instead
+
+                    n_m_bram_B_addr <= (block_loaded) ? n_m_bram_B_addr + 1 : n_m_bram_B_addr; // write to next address if got the previous blocks
+                    // n_m_bram_B_write_data_block <= m_in;  // do this combinationally instead
 
                     // Clean top BRAM
                     accumulator_bram_A_write_addr <= accumulator_bram_A_write_addr + 1;
@@ -196,16 +244,8 @@ module fsm_multiplier  #(
 
                     // End writing
                     if (n_m_bram_A_addr == (BRAM_REGION_SIZE-1)) begin
-                        state <= COMPUTING;
-
-                        n_m_bram_A_addr <= 0;
-                        n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
-
-                        n_m_reading_valid <= 1;
-
-                        accumulator_bram_A_write_addr <= 0;
+                        finalize_writing_next_cycle <= 1'b1;
                     end
-
                 end
                 COMPUTING: begin
                     
@@ -215,7 +255,7 @@ module fsm_multiplier  #(
                     n_m_reading_valid_pipe3 <= n_m_reading_valid_pipe2; // (Correct delay when first data block received is valid)
                     if (!n_m_reading_valid & !n_m_reading_valid_pipe1 & !n_m_reading_valid_pipe2 & !n_m_reading_valid_pipe3) begin // add extra pipe? Should only be 2 cycles
                         state <= OUTPUTING;
-                        accumulator_bram_B_read_addr <= 0; 
+                        computing_done <= 1'b1;
                     end
 
                     // Pipes to know accumulator write address corresponding to accumulator write block
@@ -244,7 +284,14 @@ module fsm_multiplier  #(
                     // COMPUTING LOGIC (also see always_comb)
                     if (n_m_reading_valid_pipe2) begin
 
-                        product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block; 
+                        // product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block; 
+                        
+                        // Babbage products (with four products instead of Karatsuba's 3)
+                        bab_z0 <= n_m_bram_A_read_data_block[REGISTER_SIZE/2-1:0] * n_m_bram_B_read_data_block[REGISTER_SIZE/2-1:0]; 
+                        bab_z1_a <= n_m_bram_A_read_data_block[REGISTER_SIZE-1:REGISTER_SIZE/2] * n_m_bram_B_read_data_block[REGISTER_SIZE/2-1:0];
+                        bab_z1_b <= n_m_bram_A_read_data_block[REGISTER_SIZE/2-1:0] * n_m_bram_B_read_data_block[REGISTER_SIZE-1:REGISTER_SIZE/2];
+                        bab_z2 <= n_m_bram_A_read_data_block[REGISTER_SIZE-1:REGISTER_SIZE/2] * n_m_bram_B_read_data_block[REGISTER_SIZE-1:REGISTER_SIZE/2];
+
                         
                         valid_product <= 1; // give an additional cycle to write the first product into the register
                         if (valid_product) begin
@@ -261,6 +308,14 @@ module fsm_multiplier  #(
                 end
                 default: begin // OUTPUTTING
 
+                    computing_done_pipe1 <= computing_done; 
+                    computing_done_pipe2 <= computing_done_pipe1;
+                    computing_done_pipe3 <= computing_done_pipe2;
+                    computing_done_pipe4 <= computing_done_pipe3;
+                    if (computing_done)
+                        accumulator_bram_B_read_addr <= 0;
+                        block_loaded <= 1'b1;
+
                     if (final_out) begin
                         state <= IDLE;
                         final_out <= 1'b0;
@@ -269,13 +324,19 @@ module fsm_multiplier  #(
                         final_pipe1 <= 1'b1;
                         final_pipe2 <= final_pipe1;
                         final_out <= final_pipe2;
+                        accumulator_bram_B_read_addr <= accumulator_bram_B_read_addr;
+                        block_loaded <= !block_loaded;
                     end else begin
-                        
-                        accumulator_bram_B_read_addr <= accumulator_bram_B_read_addr + 1'b1;
+                        if (computing_done_pipe2)
+                        block_loaded <= !block_loaded;
+
+                        if (computing_done_pipe2) begin
+                        accumulator_bram_B_read_addr <= (block_loaded) ? accumulator_bram_B_read_addr + 1'b1 : accumulator_bram_B_read_addr;
 
                         // clean the block
-                        accumulator_bram_A_write_addr <= accumulator_bram_A_write_addr + 1'b1;
+                        accumulator_bram_A_write_addr <= (block_loaded) ? accumulator_bram_A_write_addr + 1'b1 : accumulator_bram_A_write_addr;
                         accumulator_bram_A_write_data_block <= 0;
+                        end
                     end
 
                 end
@@ -289,9 +350,14 @@ module fsm_multiplier  #(
 
     // COMPUTING COMBINATIONAL LOGIC AND WIRES/REGS DECLARATIONS
     logic valid_product;
-    logic [(2*REGISTER_SIZE)-1:0] product;
+    logic [2*REGISTER_SIZE-1:0] product;
     logic [REGISTER_SIZE-1:0] lower_prod;
     logic [REGISTER_SIZE-1:0] upper_prod;
+
+    logic [REGISTER_SIZE-1:0] bab_z0;
+    logic [REGISTER_SIZE-1:0] bab_z1_a;
+    logic [REGISTER_SIZE-1:0] bab_z1_b;
+    logic [REGISTER_SIZE-1:0] bab_z2;
 
     logic [REGISTER_SIZE-1:0] prev_upper_prod;
     logic prev_prod_sum_carry;
@@ -308,6 +374,7 @@ module fsm_multiplier  #(
     always_comb begin
 
         // (above we have: product <= n_m_bram_A_read_data_block * n_m_bram_B_read_data_block )
+        product = (bab_z2 << REGISTER_SIZE) + ((bab_z1_a + bab_z1_b) << REGISTER_SIZE/2) + bab_z0;
         lower_prod = product[REGISTER_SIZE-1:0];
         upper_prod = product[2*REGISTER_SIZE-1:REGISTER_SIZE];
 
@@ -320,8 +387,10 @@ module fsm_multiplier  #(
         accumulator_sum_carry = accumulator_sum[REGISTER_SIZE];
 
         // Out data block
-        data_out = accumulator_bram_B_read_data_block_piped;
-        valid_out = (state == OUTPUTING);
+        data_out = (block_loaded) 
+                        ? accumulator_bram_B_read_data_block[REGISTER_SIZE-1:REGISTER_SIZE_IN]
+                        : accumulator_bram_B_read_data_block[REGISTER_SIZE_IN-1:0];
+        valid_out = (state == OUTPUTING && computing_done_pipe3);
         
         ready_out = (state == IDLE);
 
