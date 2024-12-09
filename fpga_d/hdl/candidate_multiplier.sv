@@ -1,12 +1,13 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
+
 `ifdef SYNTHESIS
 `define FPATH(X) `"X`"
 `else /* ! SYNTHESIS */
 `define FPATH(X) `"../../data/X`"
 `endif  /* ! SYNTHESIS */
-module mont_caster  #(
+module candidate_multiplier  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096
     )
@@ -46,7 +47,7 @@ module mont_caster  #(
     #(
         .RAM_WIDTH(REGISTER_SIZE),
         .RAM_DEPTH(BRAM_DEPTH),
-        .INIT_FILE(`FPATH(R_squared_modN.mem)))     
+        .INIT_FILE(`FPATH(GR_modN.mem)))     
     n_m_bram
         (
         // PORT A - store n

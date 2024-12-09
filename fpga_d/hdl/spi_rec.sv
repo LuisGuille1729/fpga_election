@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module spi_con
+module spi_rec
      #(parameter DATA_WIDTH = 8,
        parameter DATA_CLK_PERIOD = 100
       )

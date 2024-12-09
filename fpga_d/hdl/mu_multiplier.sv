@@ -6,7 +6,7 @@
 `else /* ! SYNTHESIS */
 `define FPATH(X) `"../../data/X`"
 `endif  /* ! SYNTHESIS */
-module mont_caster  #(
+module mu_multiplier  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096
     )
@@ -46,7 +46,7 @@ module mont_caster  #(
     #(
         .RAM_WIDTH(REGISTER_SIZE),
         .RAM_DEPTH(BRAM_DEPTH),
-        .INIT_FILE(`FPATH(R_squared_modN.mem)))     
+        .INIT_FILE(`FPATH(mu.mem)))     
     n_m_bram
         (
         // PORT A - store n

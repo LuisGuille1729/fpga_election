@@ -2,7 +2,9 @@
 
 module bram_blocks_rw #(
     parameter REGISTER_SIZE = 32,
-    parameter NUM_BLOCKS = 128
+    parameter NUM_BLOCKS = 128,
+    parameter INIT_FILE = ""      
+
 ) (
     input wire clk_in,
     input wire rst_in,
@@ -73,7 +75,9 @@ end
 xilinx_true_dual_port_read_first_2_clock_ram
 #(
     .RAM_WIDTH(REGISTER_SIZE),
-    .RAM_DEPTH(NUM_BLOCKS))
+    .RAM_DEPTH(NUM_BLOCKS),
+    .INIT_FILE(INIT_FILE)
+    )    
 bram
     (
     // PORT A - READ

@@ -1,17 +1,13 @@
 `default_nettype none
 // computes addition of 2 numbers by writing to block ram and sending the data back out in cycles
 // has a valid out signal and a last signal to showcase a finished addition. 
-`ifdef SYNTHESIS
-`define FPATH(X) `"X`"
-`else /* ! SYNTHESIS */
-`define FPATH(X) `"../../data/X`"
-`endif  /* ! SYNTHESIS */
-module mont_caster  #(
+module fsm_multiplier_nonparallel  #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096
     )
     (
         input wire [REGISTER_SIZE-1:0] n_in,
+        input wire [REGISTER_SIZE-1:0] m_in,
         input wire valid_in,
         input wire rst_in,
         input wire clk_in,
@@ -40,13 +36,13 @@ module mont_caster  #(
 
     // Port B
     logic [ADDR_WIDTH-1:0] n_m_bram_B_addr;
+    logic [BRAM_WIDTH-1:0] n_m_bram_B_write_data_block;
     logic [BRAM_WIDTH-1:0] n_m_bram_B_read_data_block;
 
     xilinx_true_dual_port_read_first_2_clock_ram
     #(
         .RAM_WIDTH(REGISTER_SIZE),
-        .RAM_DEPTH(BRAM_DEPTH),
-        .INIT_FILE(`FPATH(R_squared_modN.mem)))     
+        .RAM_DEPTH(BRAM_DEPTH))
     n_m_bram
         (
         // PORT A - store n
@@ -60,9 +56,9 @@ module mont_caster  #(
         .douta(n_m_bram_A_read_data_block_true_value),
         // PORT B - store m
         .addrb(n_m_bram_B_addr),
-        .dinb(),
+        .dinb(n_m_bram_B_write_data_block),
         .clkb(clk_in),
-        .web(0), 
+        .web(state == WRITING), 
         .enb(1'b1),
         .rstb(rst_in),
         .regceb(state == COMPUTING),
@@ -146,6 +142,7 @@ module mont_caster  #(
             n_m_bram_A_addr <= 0;
             n_m_bram_A_write_data_block <= 0;
             n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
+            n_m_bram_B_write_data_block <= 0;
             
             n_m_reading_valid <= 0;
             n_m_reading_valid_pipe1 <= 0;
@@ -177,6 +174,7 @@ module mont_caster  #(
                         state <= WRITING;
 
                         n_m_bram_A_write_data_block <= n_in;
+                        n_m_bram_B_write_data_block <= m_in; 
 
                     end
                 end
@@ -187,6 +185,7 @@ module mont_caster  #(
                     n_m_bram_A_write_data_block <= n_in;
 
                     n_m_bram_B_addr <= n_m_bram_B_addr + 1;
+                    n_m_bram_B_write_data_block <= m_in;  
 
                     // Clean top BRAM
                     accumulator_bram_A_write_addr <= accumulator_bram_A_write_addr + 1;
