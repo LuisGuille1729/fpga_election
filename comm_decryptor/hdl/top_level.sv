@@ -54,8 +54,6 @@ module top_level
     .tx_wire_out(uart_txd)
   );
 
-  // 
-
 
 
 
