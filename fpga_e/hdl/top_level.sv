@@ -335,28 +335,6 @@ module byte_repeater  #(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-  
-
-
-
 // *************** (END TESTING IN ISOLATION WITHOUT DECRYPTOR FPGA) ********************** //
 
 
