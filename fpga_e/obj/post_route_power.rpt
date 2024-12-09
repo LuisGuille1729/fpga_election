@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version     : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date             : Mon Dec  9 17:14:42 2024
-| Host             : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
+| Date             : Mon Dec  9 17:41:55 2024
+| Host             : eecs-digital-05 running 64-bit Ubuntu 24.04.1 LTS
 | Command          : report_power -file obj/post_route_power.rpt
 | Design           : top_level
 | Device           : xc7s50csga324-1
@@ -30,14 +30,14 @@ Table of Contents
 ----------
 
 +--------------------------+--------------+
-| Total On-Chip Power (W)  | 0.274        |
+| Total On-Chip Power (W)  | 0.401        |
 | Design Power Budget (W)  | Unspecified* |
 | Power Budget Margin (W)  | NA           |
-| Dynamic (W)              | 0.200        |
-| Device Static (W)        | 0.073        |
+| Dynamic (W)              | 0.327        |
+| Device Static (W)        | 0.074        |
 | Effective TJA (C/W)      | 4.9          |
-| Max Ambient (C)          | 83.6         |
-| Junction Temperature (C) | 26.4         |
+| Max Ambient (C)          | 83.0         |
+| Junction Temperature (C) | 27.0         |
 | Confidence Level         | Low          |
 | Setting File             | ---          |
 | Simulation Activity File | ---          |
@@ -52,19 +52,19 @@ Table of Contents
 +----------------+-----------+----------+-----------+-----------------+
 | On-Chip        | Power (W) | Used     | Available | Utilization (%) |
 +----------------+-----------+----------+-----------+-----------------+
-| Clocks         |     0.015 |        3 |       --- |             --- |
-| Slice Logic    |     0.023 |     9633 |       --- |             --- |
-|   LUT as Logic |     0.018 |     3705 |     32600 |           11.37 |
-|   CARRY4       |     0.003 |      486 |      8150 |            5.96 |
-|   Register     |     0.001 |     4132 |     65200 |            6.34 |
+| Clocks         |     0.024 |        3 |       --- |             --- |
+| Slice Logic    |     0.039 |    14169 |       --- |             --- |
+|   LUT as Logic |     0.030 |     6276 |     32600 |           19.25 |
+|   CARRY4       |     0.007 |     1066 |      8150 |           13.08 |
+|   Register     |     0.001 |     5415 |     65200 |            8.31 |
 |   F7/F8 Muxes  |    <0.001 |       32 |     32600 |            0.10 |
-|   Others       |     0.000 |      237 |       --- |             --- |
-| Signals        |     0.038 |    11428 |       --- |             --- |
-| Block RAM      |     0.085 |       23 |        75 |           30.67 |
-| DSPs           |     0.040 |       48 |       120 |           40.00 |
+|   Others       |     0.000 |      228 |       --- |             --- |
+| Signals        |     0.074 |    19854 |       --- |             --- |
+| Block RAM      |     0.098 |       32 |        75 |           42.67 |
+| DSPs           |     0.092 |      120 |       120 |          100.00 |
 | I/O            |    <0.001 |        8 |       210 |            3.81 |
-| Static Power   |     0.073 |          |           |                 |
-| Total          |     0.274 |          |           |                 |
+| Static Power   |     0.074 |          |           |                 |
+| Total          |     0.401 |          |           |                 |
 +----------------+-----------+----------+-----------+-----------------+
 
 
@@ -74,7 +74,7 @@ Table of Contents
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 | Source    | Voltage (V) | Total (A) | Dynamic (A) | Static (A) | Powerup (A) | Budget (A)  | Margin (A) |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
-| Vccint    |       1.000 |     0.207 |       0.196 |      0.011 |       NA    | Unspecified | NA         |
+| Vccint    |       1.000 |     0.333 |       0.322 |      0.011 |       NA    | Unspecified | NA         |
 | Vccaux    |       1.800 |     0.013 |       0.000 |      0.013 |       NA    | Unspecified | NA         |
 | Vcco33    |       3.300 |     0.001 |       0.000 |      0.001 |       NA    | Unspecified | NA         |
 | Vcco25    |       2.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
@@ -83,7 +83,7 @@ Table of Contents
 | Vcco135   |       1.350 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco12    |       1.200 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vccaux_io |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
-| Vccbram   |       1.000 |     0.005 |       0.004 |      0.001 |       NA    | Unspecified | NA         |
+| Vccbram   |       1.000 |     0.006 |       0.005 |      0.001 |       NA    | Unspecified | NA         |
 | Vccadc    |       1.800 |     0.020 |       0.000 |      0.020 |       NA    | Unspecified | NA         |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 
@@ -141,31 +141,31 @@ Table of Contents
 +--------------------------------------+-----------+
 | Name                                 | Power (W) |
 +--------------------------------------+-----------+
-| top_level                            |     0.200 |
-|   encryptorator                      |     0.047 |
-|     vote_1_caster                    |     0.011 |
-|       accumulator_bram               |     0.002 |
-|       n_m_bram                       |     0.002 |
-|     vote_1_reducer                   |     0.036 |
-|       T_blocks_BRAM                  |     0.001 |
-|       multiplier_TmodR_times_k       |     0.015 |
-|       multiplier_m_times_N           |     0.014 |
+| top_level                            |     0.327 |
+|   encryptorator                      |     0.037 |
+|     vote_1_caster                    |     0.010 |
+|       accumulator_bram               |     0.001 |
+|       n_m_bram                       |     0.003 |
+|     vote_1_reducer                   |     0.027 |
+|       multiplier_TmodR_times_k       |     0.010 |
+|       multiplier_m_times_N           |     0.012 |
 |       product_Mn_block_pipeline      |     0.001 |
 |       t_result_blocks_BRAM           |     0.003 |
-|   expo                               |     0.148 |
-|     result_computer                  |     0.101 |
-|       mont_accumulator_inst          |     0.051 |
-|       montgomery_squarer_stream_inst |     0.050 |
-|     stage_1                          |     0.017 |
+|   expo                               |     0.284 |
+|     result_computer                  |     0.233 |
+|       mont_accumulator_inst          |     0.119 |
+|       montgomery_squarer_stream_inst |     0.114 |
+|     stage_1                          |     0.018 |
 |       accumulator_bram               |     0.003 |
-|       n_m_bram                       |     0.005 |
-|     stage_2                          |     0.031 |
-|       multiplier_TmodR_times_k       |     0.012 |
-|       multiplier_m_times_N           |     0.013 |
+|       n_m_bram                       |     0.006 |
+|     stage_2                          |     0.033 |
+|       multiplier_TmodR_times_k       |     0.013 |
+|       multiplier_m_times_N           |     0.014 |
 |       product_Mn_block_pipeline      |     0.002 |
-|       t_result_blocks_BRAM           |     0.002 |
-|   spi_storage                        |     0.002 |
-|     encryptor_bram                   |     0.002 |
+|       t_result_blocks_BRAM           |     0.003 |
+|   process_vote                       |     0.001 |
+|   spi_storage                        |     0.003 |
+|     encryptor_bram                   |     0.003 |
 +--------------------------------------+-----------+
 
 

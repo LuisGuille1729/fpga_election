@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Mon Dec  9 17:14:42 2024
-| Host         : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
+| Date         : Mon Dec  9 17:41:54 2024
+| Host         : eecs-digital-05 running 64-bit Ubuntu 24.04.1 LTS
 | Command      : report_timing -file obj/post_route_timing.rpt
 | Design       : top_level
 | Device       : 7s50-csga324
@@ -12,20 +12,20 @@ Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanc
 
 Timing Report
 
-Slack (MET) :             0.494ns  (required time - arrival time)
-  Source:                 expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_addr_reg[1]/C
+Slack (MET) :             0.081ns  (required time - arrival time)
+  Source:                 expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram_A_addr_reg[1]/C
                             (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
-  Destination:            expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/PCIN[0]
+  Destination:            expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z2_reg/PCIN[0]
                             (rising edge-triggered cell DSP48E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
   Path Group:             gclk
   Path Type:              Setup (Max at Slow Process Corner)
   Requirement:            10.000ns  (gclk rise@10.000ns - gclk rise@0.000ns)
-  Data Path Delay:        8.053ns  (logic 4.970ns (61.713%)  route 3.083ns (38.287%))
-  Logic Levels:           3  (DSP48E1=1 LUT4=1 LUT6=1)
+  Data Path Delay:        8.467ns  (logic 4.845ns (57.222%)  route 3.622ns (42.778%))
+  Logic Levels:           3  (DSP48E1=1 LUT2=1 LUT6=1)
   Clock Path Skew:        -0.017ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    4.858ns = ( 14.858 - 10.000 ) 
-    Source Clock Delay      (SCD):    5.062ns
-    Clock Pessimism Removal (CPR):    0.187ns
+    Destination Clock Delay (DCD):    4.860ns = ( 14.860 - 10.000 ) 
+    Source Clock Delay      (SCD):    5.063ns
+    Clock Pessimism Removal (CPR):    0.186ns
   Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
     Total Input Jitter      (TIJ):    0.000ns
@@ -40,19 +40,19 @@ Slack (MET) :             0.494ns  (required time - arrival time)
     N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, routed)           1.972     3.412    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096     3.508 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, routed)        1.554     5.062    expo/result_computer/mont_accumulator_inst/markiplier/clk_100mhz_IBUF_BUFG
-    SLICE_X39Y31         FDRE                                         r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_addr_reg[1]/C
+                         net (fo=5615, routed)        1.555     5.063    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/CLK
+    SLICE_X14Y89         FDRE                                         r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram_A_addr_reg[1]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X39Y31         FDRE (Prop_fdre_C_Q)         0.456     5.518 r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_addr_reg[1]/Q
-                         net (fo=10, routed)          0.841     6.359    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_addr_reg_n_0_[1]
-    SLICE_X41Y31         LUT6 (Prop_lut6_I1_O)        0.124     6.483 r  expo/result_computer/mont_accumulator_inst/markiplier/product0_i_16__2/O
-                         net (fo=34, routed)          0.925     7.409    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/product_reg
-    SLICE_X38Y30         LUT4 (Prop_lut4_I0_O)        0.150     7.559 r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/product0__0_i_13__2/O
-                         net (fo=1, routed)           1.315     8.874    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_read_data_block[4]
-    DSP48_X0Y10          DSP48E1 (Prop_dsp48e1_A[4]_PCOUT[0])
-                                                      4.240    13.114 r  expo/result_computer/mont_accumulator_inst/markiplier/product0__0/PCOUT[0]
-                         net (fo=1, routed)           0.002    13.116    expo/result_computer/mont_accumulator_inst/markiplier/product0__0_n_153
-    DSP48_X0Y11          DSP48E1                                      r  expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/PCIN[0]
+    SLICE_X14Y89         FDRE (Prop_fdre_C_Q)         0.518     5.581 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram_A_addr_reg[1]/Q
+                         net (fo=12, routed)          0.867     6.448    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram_A_addr_reg_n_0_[1]
+    SLICE_X14Y90         LUT6 (Prop_lut6_I1_O)        0.124     6.572 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z1_b0_i_16/O
+                         net (fo=64, routed)          1.280     7.852    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram/bab_z0_reg__0
+    SLICE_X24Y101        LUT2 (Prop_lut2_I0_O)        0.150     8.002 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/n_m_bram/bab_z1_a0_i_2/O
+                         net (fo=4, routed)           1.473     9.475    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/p_1_in[30]
+    DSP48_X1Y36          DSP48E1 (Prop_dsp48e1_B[13]_PCOUT[0])
+                                                      4.053    13.528 r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z20/PCOUT[0]
+                         net (fo=1, routed)           0.002    13.530    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z20_n_153
+    DSP48_X1Y37          DSP48E1                                      r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z2_reg/PCIN[0]
   -------------------------------------------------------------------    -------------------
 
                          (clock gclk rise edge)      10.000    10.000 r  
@@ -61,17 +61,17 @@ Slack (MET) :             0.494ns  (required time - arrival time)
     N15                  IBUF (Prop_ibuf_I_O)         1.370    11.370 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, routed)           1.868    13.238    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.091    13.329 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, routed)        1.529    14.858    expo/result_computer/mont_accumulator_inst/markiplier/clk_100mhz_IBUF_BUFG
-    DSP48_X0Y11          DSP48E1                                      r  expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/CLK
-                         clock pessimism              0.187    15.045    
-                         clock uncertainty           -0.035    15.009    
-    DSP48_X0Y11          DSP48E1 (Setup_dsp48e1_CLK_PCIN[0])
-                                                     -1.400    13.609    expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0
+                         net (fo=5615, routed)        1.531    14.860    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/CLK
+    DSP48_X1Y37          DSP48E1                                      r  expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z2_reg/CLK
+                         clock pessimism              0.186    15.046    
+                         clock uncertainty           -0.035    15.011    
+    DSP48_X1Y37          DSP48E1 (Setup_dsp48e1_CLK_PCIN[0])
+                                                     -1.400    13.611    expo/result_computer/montgomery_squarer_stream_inst/squarer_stream_reducer/multiplier_TmodR_times_k/bab_z2_reg
   -------------------------------------------------------------------
-                         required time                         13.609    
-                         arrival time                         -13.116    
+                         required time                         13.611    
+                         arrival time                         -13.530    
   -------------------------------------------------------------------
-                         slack                                  0.494    
+                         slack                                  0.081    
 
 
 

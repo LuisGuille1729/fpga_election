@@ -1,13 +1,13 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Mon Dec  9 17:14:29 2024
-| Host         : eecs-digital-06 running 64-bit Ubuntu 24.04 LTS
+| Date         : Mon Dec  9 17:41:37 2024
+| Host         : eecs-digital-05 running 64-bit Ubuntu 24.04.1 LTS
 | Command      : report_timing_summary -file obj/post_place_timing_summary.rpt
 | Design       : top_level
 | Device       : 7s50-csga324
 | Speed File   : -1  PRODUCTION 1.23 2018-06-13
-| Design State : Fully Placed
+| Design State : Physopt postPlace
 ---------------------------------------------------------------------------------------------------------------------------------------------
 
 Timing Summary Report
@@ -138,7 +138,7 @@ Table of Contents
 
     WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
     -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-      0.395        0.000                      0                13724       -0.188       -2.003                     28                13724        3.500        0.000                       0                  4225  
+      0.013        0.000                      0                21626       -0.109       -0.340                     10                21626        3.500        0.000                       0                  5555  
 
 
 Timing constraints are not met.
@@ -161,7 +161,7 @@ gclk   {0.000 4.000}      10.000          100.000
 
 Clock             WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
 -----             -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-gclk                0.395        0.000                      0                13724       -0.188       -2.003                     28                13724        3.500        0.000                       0                  4225  
+gclk                0.013        0.000                      0                21626       -0.109       -0.340                     10                21626        3.500        0.000                       0                  5555  
 
 
 ------------------------------------------------------------------------------------------------
@@ -192,28 +192,28 @@ Path Group    From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing 
 From Clock:  gclk
   To Clock:  gclk
 
-Setup :            0  Failing Endpoints,  Worst Slack        0.395ns,  Total Violation        0.000ns
-Hold  :           28  Failing Endpoints,  Worst Slack       -0.188ns,  Total Violation       -2.003ns
+Setup :            0  Failing Endpoints,  Worst Slack        0.013ns,  Total Violation        0.000ns
+Hold  :           10  Failing Endpoints,  Worst Slack       -0.109ns,  Total Violation       -0.340ns
 PW    :            0  Failing Endpoints,  Worst Slack        3.500ns,  Total Violation        0.000ns
 ---------------------------------------------------------------------------------------------------
 
 
 Max Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.395ns  (required time - arrival time)
-  Source:                 expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/BRAM_reg/CLKBWRCLK
-                            (rising edge-triggered cell RAMB36E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
-  Destination:            expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/PCIN[0]
-                            (rising edge-triggered cell DSP48E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+Slack (MET) :             0.013ns  (required time - arrival time)
+  Source:                 encryptorator/vote_1_caster/n_m_bram_A_addr_reg[5]/C
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Destination:            encryptorator/vote_1_caster/product_reg[1]/D
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
   Path Group:             gclk
   Path Type:              Setup (Max at Slow Process Corner)
   Requirement:            10.000ns  (gclk rise@10.000ns - gclk rise@0.000ns)
-  Data Path Delay:        8.105ns  (logic 5.275ns (65.083%)  route 2.830ns (34.917%))
-  Logic Levels:           2  (DSP48E1=1 LUT4=1)
-  Clock Path Skew:        -0.065ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    4.866ns = ( 14.866 - 10.000 ) 
-    Source Clock Delay      (SCD):    5.112ns
-    Clock Pessimism Removal (CPR):    0.181ns
+  Data Path Delay:        9.746ns  (logic 4.588ns (47.076%)  route 5.158ns (52.924%))
+  Logic Levels:           3  (DSP48E1=1 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.103ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    4.787ns = ( 14.787 - 10.000 ) 
+    Source Clock Delay      (SCD):    5.142ns
+    Clock Pessimism Removal (CPR):    0.253ns
   Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
     Total Input Jitter      (TIJ):    0.000ns
@@ -228,18 +228,19 @@ Slack (MET) :             0.395ns  (required time - arrival time)
     N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, estimated)        1.972     3.412    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096     3.508 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, estimated)     1.603     5.112    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/clk_100mhz_IBUF_BUFG
-    RAMB36_X1Y6          RAMB36E1                                     r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/BRAM_reg/CLKBWRCLK
+                         net (fo=5615, estimated)     1.634     5.142    encryptorator/vote_1_caster/CLK
+    SLICE_X7Y11          FDRE                                         r  encryptorator/vote_1_caster/n_m_bram_A_addr_reg[5]/C
   -------------------------------------------------------------------    -------------------
-    RAMB36_X1Y6          RAMB36E1 (Prop_ramb36e1_CLKBWRCLK_DOBDO[3])
-                                                      0.882     5.994 r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/BRAM_reg/DOBDO[3]
-                         net (fo=1, estimated)        1.608     7.602    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/output_register.douta_reg[3]
-    SLICE_X33Y31         LUT4 (Prop_lut4_I3_O)        0.154     7.756 r  expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram/product0__0_i_14__2/O
-                         net (fo=1, estimated)        1.222     8.978    expo/result_computer/mont_accumulator_inst/markiplier/n_m_bram_A_read_data_block[3]
-    DSP48_X0Y10          DSP48E1 (Prop_dsp48e1_A[3]_PCOUT[0])
-                                                      4.239    13.217 r  expo/result_computer/mont_accumulator_inst/markiplier/product0__0/PCOUT[0]
-                         net (fo=1, estimated)        0.000    13.217    expo/result_computer/mont_accumulator_inst/markiplier/product0__0_n_153
-    DSP48_X0Y11          DSP48E1                                      r  expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/PCIN[0]
+    SLICE_X7Y11          FDRE (Prop_fdre_C_Q)         0.456     5.598 r  encryptorator/vote_1_caster/n_m_bram_A_addr_reg[5]/Q
+                         net (fo=7, estimated)        1.115     6.713    encryptorator/vote_1_caster/n_m_bram_A_addr_reg_n_0_[5]
+    SLICE_X8Y11          LUT6 (Prop_lut6_I1_O)        0.124     6.837 r  encryptorator/vote_1_caster/product0_i_16__2/O
+                         net (fo=33, estimated)       0.788     7.625    encryptorator/vote_1_caster/n_m_bram/product_reg
+    SLICE_X9Y14          LUT4 (Prop_lut4_I2_O)        0.150     7.775 r  encryptorator/vote_1_caster/n_m_bram/product0_i_7__2/O
+                         net (fo=2, estimated)        1.420     9.195    encryptorator/vote_1_caster/n_m_bram_A_read_data_block[25]
+    DSP48_X0Y14          DSP48E1 (Prop_dsp48e1_B[8]_P[1])
+                                                      3.858    13.053 r  encryptorator/vote_1_caster/product0/P[1]
+                         net (fo=1, estimated)        1.835    14.888    encryptorator/vote_1_caster/product0_n_104
+    SLICE_X11Y10         FDRE                                         r  encryptorator/vote_1_caster/product_reg[1]/D
   -------------------------------------------------------------------    -------------------
 
                          (clock gclk rise edge)      10.000    10.000 r  
@@ -248,17 +249,16 @@ Slack (MET) :             0.395ns  (required time - arrival time)
     N15                  IBUF (Prop_ibuf_I_O)         1.370    11.370 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, estimated)        1.873    13.244    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.091    13.335 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, estimated)     1.532    14.866    expo/result_computer/mont_accumulator_inst/markiplier/clk_100mhz_IBUF_BUFG
-    DSP48_X0Y11          DSP48E1                                      r  expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0/CLK
-                         clock pessimism              0.181    15.047    
-                         clock uncertainty           -0.035    15.011    
-    DSP48_X0Y11          DSP48E1 (Setup_dsp48e1_CLK_PCIN[0])
-                                                     -1.400    13.611    expo/result_computer/mont_accumulator_inst/markiplier/product_reg__0
+                         net (fo=5615, estimated)     1.452    14.787    encryptorator/vote_1_caster/CLK
+    SLICE_X11Y10         FDRE                                         r  encryptorator/vote_1_caster/product_reg[1]/C
+                         clock pessimism              0.253    15.039    
+                         clock uncertainty           -0.035    15.004    
+    SLICE_X11Y10         FDRE (Setup_fdre_C_D)       -0.103    14.901    encryptorator/vote_1_caster/product_reg[1]
   -------------------------------------------------------------------
-                         required time                         13.611    
-                         arrival time                         -13.217    
+                         required time                         14.901    
+                         arrival time                         -14.888    
   -------------------------------------------------------------------
-                         slack                                  0.395    
+                         slack                                  0.013    
 
 
 
@@ -266,20 +266,20 @@ Slack (MET) :             0.395ns  (required time - arrival time)
 
 Min Delay Paths
 --------------------------------------------------------------------------------------
-Slack (VIOLATED) :        -0.188ns  (arrival time - required time)
-  Source:                 encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram_B_write_data_block_reg[16]/C
+Slack (VIOLATED) :        -0.109ns  (arrival time - required time)
+  Source:                 expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram_A_write_data_block_reg[13]/C
                             (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
-  Destination:            encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/BRAM_reg/DIADI[16]
+  Destination:            expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/BRAM_reg/DIADI[13]
                             (rising edge-triggered cell RAMB36E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
   Path Group:             gclk
   Path Type:              Hold (Min at Fast Process Corner)
   Requirement:            0.000ns  (gclk rise@0.000ns - gclk rise@0.000ns)
-  Data Path Delay:        0.273ns  (logic 0.141ns (51.740%)  route 0.132ns (48.260%))
+  Data Path Delay:        0.270ns  (logic 0.141ns (52.144%)  route 0.129ns (47.856%))
   Logic Levels:           0  
-  Clock Path Skew:        0.305ns (DCD - SCD - CPR)
+  Clock Path Skew:        0.224ns (DCD - SCD - CPR)
     Destination Clock Delay (DCD):    2.173ns
-    Source Clock Delay      (SCD):    1.634ns
-    Clock Pessimism Removal (CPR):    0.234ns
+    Source Clock Delay      (SCD):    1.710ns
+    Clock Pessimism Removal (CPR):    0.239ns
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -289,12 +289,12 @@ Slack (VIOLATED) :        -0.188ns  (arrival time - required time)
     N15                  IBUF (Prop_ibuf_I_O)         0.209     0.209 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, estimated)        0.831     1.040    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.026     1.066 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, estimated)     0.568     1.634    encryptorator/vote_1_reducer/multiplier_TmodR_times_k/clk_100mhz_IBUF_BUFG
-    SLICE_X9Y49          FDRE                                         r  encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram_B_write_data_block_reg[16]/C
+                         net (fo=5615, estimated)     0.644     1.710    expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/CLK
+    SLICE_X49Y100        FDRE                                         r  expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram_A_write_data_block_reg[13]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X9Y49          FDRE (Prop_fdre_C_Q)         0.141     1.775 r  encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram_B_write_data_block_reg[16]/Q
-                         net (fo=1, estimated)        0.132     1.906    encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/BRAM_reg_1[16]
-    RAMB36_X0Y10         RAMB36E1                                     r  encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/BRAM_reg/DIADI[16]
+    SLICE_X49Y100        FDRE (Prop_fdre_C_Q)         0.141     1.851 r  expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram_A_write_data_block_reg[13]/Q
+                         net (fo=1, estimated)        0.129     1.980    expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/BRAM_reg_2[13]
+    RAMB36_X1Y19         RAMB36E1                                     r  expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/BRAM_reg/DIADI[13]
   -------------------------------------------------------------------    -------------------
 
                          (clock gclk rise edge)       0.000     0.000 r  
@@ -303,16 +303,16 @@ Slack (VIOLATED) :        -0.188ns  (arrival time - required time)
     N15                  IBUF (Prop_ibuf_I_O)         0.396     0.396 r  clk_100mhz_IBUF_inst/O
                          net (fo=1, estimated)        0.875     1.271    clk_100mhz_IBUF
     BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.029     1.300 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=4248, estimated)     0.873     2.173    encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/clk_100mhz_IBUF_BUFG
-    RAMB36_X0Y10         RAMB36E1                                     r  encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/BRAM_reg/CLKARDCLK
-                         clock pessimism             -0.234     1.939    
-    RAMB36_X0Y10         RAMB36E1 (Hold_ramb36e1_CLKARDCLK_DIADI[16])
-                                                      0.155     2.094    encryptorator/vote_1_reducer/multiplier_TmodR_times_k/n_m_bram/BRAM_reg
+                         net (fo=5615, estimated)     0.873     2.173    expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/CLK
+    RAMB36_X1Y19         RAMB36E1                                     r  expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/BRAM_reg/CLKBWRCLK
+                         clock pessimism             -0.239     1.934    
+    RAMB36_X1Y19         RAMB36E1 (Hold_ramb36e1_CLKBWRCLK_DIADI[13])
+                                                      0.155     2.089    expo/result_computer/mont_accumulator_inst/monty_gatorade/multiplier_m_times_N/accumulator_bram/BRAM_reg
   -------------------------------------------------------------------
-                         required time                         -2.094    
-                         arrival time                           1.906    
+                         required time                         -2.089    
+                         arrival time                           1.980    
   -------------------------------------------------------------------
-                         slack                                 -0.188    
+                         slack                                 -0.109    
 
 
 
@@ -325,10 +325,10 @@ Waveform(ns):       { 0.000 4.000 }
 Period(ns):         10.000
 Sources:            { clk_100mhz }
 
-Check Type        Corner  Lib Pin      Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location     Pin
-Min Period        n/a     DSP48E1/CLK  n/a            3.687         10.000      6.313      DSP48_X0Y17  encryptorator/vote_1_caster/product_reg/CLK
-Low Pulse Width   Slow    FDRE/C       n/a            0.500         6.000       5.500      SLICE_X9Y8   FSM_sequential_vote_procesor_states_reg[0]/C
-High Pulse Width  Slow    FDRE/C       n/a            0.500         4.000       3.500      SLICE_X9Y8   FSM_sequential_vote_procesor_states_reg[0]/C
+Check Type        Corner  Lib Pin      Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location      Pin
+Min Period        n/a     DSP48E1/CLK  n/a            3.687         10.000      6.313      DSP48_X0Y15   encryptorator/vote_1_caster/product_reg/CLK
+Low Pulse Width   Slow    FDRE/C       n/a            0.500         6.000       5.500      SLICE_X58Y35  FSM_sequential_vote_procesor_states_reg[0]/C
+High Pulse Width  Slow    FDRE/C       n/a            0.500         4.000       3.500      SLICE_X58Y35  FSM_sequential_vote_procesor_states_reg[0]/C
 
 
 
