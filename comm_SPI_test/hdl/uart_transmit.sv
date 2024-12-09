@@ -23,7 +23,7 @@ module uart_transmit
   logic [7:0] data_to_send;
   logic [7:0] transfer_stage; // one-hot encoding
 
-  always @( posedge clk_in ) begin
+  always_ff @( posedge clk_in ) begin
 
     if (rst_in) begin 
       cycles_counter <= 0;

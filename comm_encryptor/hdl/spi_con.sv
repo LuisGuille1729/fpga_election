@@ -71,12 +71,13 @@ module spi_con
             data_valid_out <= 1;
             // data_received <= 0;
         end if (inner_clk) begin // Falling edge (write)
-          chip_data_out <= !((send_data & transfer_stage) == 0);
+          chip_data_out <= !((send_data & transfer_stage) == 0); // send_data[i]
         end else begin  // Rising edge (read)
           data_received <= {data_received, chip_data_in};
           transfer_stage <= transfer_stage >> 1;
 
-        end 
+        end
+
         inner_clk <= ~inner_clk;
         cycles_counter <= 0;
 

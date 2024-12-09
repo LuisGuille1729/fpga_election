@@ -4,7 +4,7 @@
 module top_level
   (
     input wire          clk_100mhz,
-    input wire          [1:0] btn,
+    input wire          [2:0] btn,
     input wire [7:0] sw,
 
     output logic [2:0] rgb0, // RGB channels of RGB LED0
@@ -12,7 +12,12 @@ module top_level
     output logic [15:0] led,
 
     input wire uart_rxd, // UART computer-FPGA
-    output logic uart_txd
+    output logic uart_txd,
+
+    input wire cipo,
+    output logic dclk,
+    output logic copi,
+    output logic cs
   );
 
   localparam BAUD_RATE = 9600;
@@ -91,6 +96,36 @@ module top_level
   );
 
 
+  logic [15:0] prev_sw;
+  always_ff @(posedge clk_100mhz) begin
+    prev_sw <= (rst_in) ? 0
+              : (btn[2]) ? sw
+              : prev_sw;
+  end
+
+  // Transmit SPI  
+
+  logic [31:0] data_to_send;
+  assign data_to_send = {prev_sw, sw};
+
+  logic spi_trigger;
+  assign spi_trigger = 1; // can do spi data_valid_out + some starting logic, or out transmitting by the module
+
+  spi_con
+  #(   .DATA_WIDTH(32),
+       .DATA_CLK_PERIOD(100)
+   )my_spi_con
+   ( .clk_in(clk_100mhz),
+     .rst_in(sys_rst),
+     .data_in(data_to_send),
+     .trigger_in(spi_trigger),
+     .data_out(),
+     .data_valid_out(), //high when output data is present.
+     .chip_data_out(copi), //(serial dout preferably)
+     .chip_data_in(cipo), //(serial din preferably)
+     .chip_clk_out(dclk),
+     .chip_sel_out(cs)
+    );
   
 
 endmodule // top_level
