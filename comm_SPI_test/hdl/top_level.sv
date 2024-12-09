@@ -102,15 +102,15 @@ module top_level
   
   // logic uart_busy;
 
-  // uart_transmit #(.BAUD_RATE(BAUD_RATE)) 
-  // fpga_to_pc_uart  (
-  //   .clk_in(clk_100mhz),
-  //   .rst_in(sys_rst),
-  //   .data_byte_in(sw),
-  //   .trigger_in(trigger_uart_send),
-  //   .busy_out(uart_busy),
-  //   .tx_wire_out(uart_txd)
-  // );
+  uart_transmit #(.BAUD_RATE(BAUD_RATE)) 
+  fpga_to_pc_uart  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .data_byte_in(sw),
+    .trigger_in(trigger_uart_send),
+    .busy_out(uart_busy),
+    .tx_wire_out(uart_txd)
+  );
 
 
   logic [7:0] prev_sw;

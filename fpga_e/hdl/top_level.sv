@@ -9,7 +9,9 @@ module top_level
 
     output logic [0:0] copi,
     output logic [0:0] dclk,
-    output logic [0:0] cs
+    output logic [0:0] cs,
+
+    output logic uart_txd
   );
 
   logic   sys_rst;
@@ -251,6 +253,94 @@ spi_con #(
 
 
 
+// *************** FOR TESTING IN ISOLATION, WITHOUT DECRYPTOR FPGA ********************** //
+
+
+
+  logic [REGISTER_SIZE-1:0] data_pe_received;
+  logic data_pe_valid;
+
+  spi_pe
+  #(
+    .DATA_WIDTH(REGISTER_SIZE)
+  ) my_spi_pe
+  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+
+    // data to send (CIPO)    
+    .data_in(),
+    .valid_in(),
+
+    // received data (COPI)
+    .data_out(data_pe_received),
+    .data_valid_out(data_pe_valid),
+
+    // C P signals
+    .chip_data_in(copi), //(COPI)
+    .chip_data_out(), //(CIPO)
+    .chip_clk_in(dclk), //(DCLK)
+    .chip_sel_in(cs) // (CS) 
+  );
+
+
+
+
+module byte_repeater  #(
+    parameter REGISTER_SIZE = 32,
+    parameter BITS_IN_NUM = 4096
+    )
+    (
+        input wire [REGISTER_SIZE-1:0] data_in,
+        input wire valid_in,
+        input wire request_next_byte_in,
+        input wire rst_in,
+        input wire clk_in,
+        output logic [7:0] data_out,
+        output logic valid_out
+    );
+
+  byte_repeater #(
+    .REGISTER_SIZE(REGISTER_SIZE),
+    .BITS_IN_NUM(4096)
+  )
+  translate_spi_blocks
+  (
+    .rst_in(sys_rst),
+    .clk_in(clk_100mhz),
+
+    .data_in(data_pe_received),
+    .valid_in(data_pe_valid),
+
+    .request_next_byte_in(!uart_tx_busy),
+    .valid_out(trigger_uart_send)
+    .data_out(byte_to_send),
+  );
+
+
+  logic uart_tx_busy;
+  logic trigger_uart_send;
+  logic byte_to_send;
+
+  uart_transmit #(.BAUD_RATE(4800)) 
+  fpga_to_pc_uart  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .data_byte_in(byte_to_send),
+    .trigger_in(trigger_uart_send),
+    .busy_out(uart_tx_busy),
+    .tx_wire_out(uart_txd)
+  );
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -264,6 +354,11 @@ spi_con #(
   
 
   
+
+
+
+// *************** (END TESTING IN ISOLATION WITHOUT DECRYPTOR FPGA) ********************** //
+
 
   // [Multiplier Block Select Counter]
   // R_SQUARED Block Select
