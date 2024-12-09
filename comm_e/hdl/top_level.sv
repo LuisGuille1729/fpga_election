@@ -4,8 +4,18 @@
 module top_level
   (
     input wire          clk_100mhz,
-    input wire          [1:0] btn
+    input wire          [1:0] btn,
+    input wire [7:0] sw,
+
+    output logic [2:0] rgb0, // RGB channels of RGB LED0
+    output logic [2:0] rgb1, // RGB channels of RGB LED1
+    output logic [15:0] led,
+
+    input wire uart_rxd, // UART computer-FPGA
+    output logic uart_txd
   );
+
+  localparam BAUD_RATE = 9600;
 
   logic   sys_rst;
   assign sys_rst = btn[0];
@@ -13,46 +23,78 @@ module top_level
   assign start = btn[1];
 
   // UART Receive
-  // We are assuming we are receiving the bits in lsb first order
   logic valid_data;
   logic [7:0] data_received_byte;
+ 
+  logic uart_rx_buf0, uart_rx_buf1;  // buffers to prevent metastability
+   always_ff @(posedge clk_100mhz) begin
+    uart_rx_buf1 <= uart_rxd;
+    uart_rx_buf0 <= uart_rx_buf1;
+   end
 
   uart_receive #(
-    .INPUT_CLOCK_FREQ(100_000_000), // may change
-    .BAUD_RATE(57600)
+    .INPUT_CLOCK_FREQ(100_000_000),
+    .BAUD_RATE(BAUD_RATE)
   ) laptop_encryptor_uart
   (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
-    .rx_wire_in(), //TODO
+    .rx_wire_in(uart_rx_buf0), 
     .new_data_out(valid_data),
     .data_byte_out(data_received_byte)
   );
 
-  // For now we only send the candidate number
-  // (Future: voterID)
-  // (Future: more bytes for checking vote)
+  always_ff @(posedge clk_100mhz) begin
+    
+    if (sys_rst) begin
+      rgb0 <= 0;
+      rgb1 <= 0;
+    end
+    else if (valid_data) begin
+      rgb0[0] <= &(~data_received_byte);
+      rgb0[1] <= &data_received_byte;
+      rgb0[2] <= !(&(~data_received_byte) || &data_received_byte);
 
-  // PROCESS VOTE
-  logic candidate_vote;
-  logic valid_processed_vote;
+      rgb1 = 3'b111;
 
-  vote_processor #(
+      led[15:8] <= data_received_byte;
+    end
+    
 
-  ) process_vote(
+  end
+
+
+// TRANSMIT
+
+  assign led[7:0] = sw;
+
+  logic previous_start;
+  logic trigger_uart_send;
+  always_ff @(posedge clk_100mhz) begin
+    previous_start <= start;
+    trigger_uart_send <= start & !previous_start;
+  end
+
+
+  // UART Transmitter 
+  
+  logic uart_busy;
+
+  uart_transmit #(.BAUD_RATE(BAUD_RATE)) 
+  fpga_to_pc_uart  (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
-    .valid_in(valid_data),
-    //TODO
-    .stall_in(),
-    .new_byte_in(data_received_byte),
-    .vote_out(candidate_vote),
-    .voter_id_out(), //TODO later for stretch
-    .valid_vote_out(valid_processed_vote)
+    .data_byte_in(sw),
+    .trigger_in(trigger_uart_send),
+    .busy_out(uart_busy),
+    .tx_wire_out(uart_txd)
   );
+
+
+  
 
 endmodule // top_level
 
 
-`default_ne
+`default_nettype wire
 

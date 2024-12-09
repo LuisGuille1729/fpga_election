@@ -175,10 +175,10 @@ product_Mn_block_pipeline
     .data_out(product_Mn_block_piped)
 );
 
-logic [REGISTER_SIZE-1:0] product_Mn_valid_piped;
+logic  product_Mn_valid_piped;
 pipeliner #(
     .PIPELINE_STAGE_COUNT(2),
-    .DATA_BIT_SIZE(REGISTER_SIZE)
+    .DATA_BIT_SIZE(1)
 )
 product_Mn_valid_pipeline
 (

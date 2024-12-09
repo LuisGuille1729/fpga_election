@@ -134,6 +134,7 @@ module fsm_multiplier  #(
     logic n_m_reading_valid_pipe1;
     logic n_m_reading_valid_pipe2;
     logic n_m_reading_valid_pipe3;
+    
 
     always_ff @( posedge clk_in ) begin
         
@@ -288,7 +289,7 @@ module fsm_multiplier  #(
 
     // COMPUTING COMBINATIONAL LOGIC AND WIRES/REGS DECLARATIONS
     logic valid_product;
-    logic [2*REGISTER_SIZE-1:0] product;
+    logic [(2*REGISTER_SIZE)-1:0] product;
     logic [REGISTER_SIZE-1:0] lower_prod;
     logic [REGISTER_SIZE-1:0] upper_prod;
 

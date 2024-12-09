@@ -1,6 +1,11 @@
 `default_nettype none
 
 // Efficiently calculates T(R^-1) mod N
+`ifdef SYNTHESIS
+`define FPATH(X) `"X`"
+`else /* ! SYNTHESIS */
+`define FPATH(X) `"../../data/X`"
+`endif  /* ! SYNTHESIS */
 module mont_accumulator #(
     parameter REGISTER_SIZE = 32,
     parameter BITS_IN_NUM = 4096,
@@ -215,7 +220,7 @@ xilinx_true_dual_port_read_first_2_clock_ram
      #(.RAM_WIDTH(BRAM_WIDTH),
        .RAM_DEPTH(BRAM_DEPTH)
        ,
-       .INIT_FILE("../../data/R_modN.mem")       
+       .INIT_FILE(`FPATH(R_modN.mem))       
        ) const_storage_bram
        (
         // PORT A
