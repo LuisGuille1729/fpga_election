@@ -24,7 +24,7 @@ module candidate_encryptor  #(
 logic [REGISTER_SIZE-1:0] candidate_casted_out;
 logic candidate_casted_valid;
 
-logic was_vaid;
+logic was_valid;
 
 logic long_valid;
 
@@ -32,18 +32,16 @@ always_comb begin
    long_valid = candidate_in && valid_in;
    data_out = candidate_in? true_casted_data: exponentiator_in;
    valid_out = casted_valid || (valid_in && (~candidate_in));
-   consumed_candidate_out =  was_vaid && (!valid_out);
+   consumed_candidate_out =  was_valid && (!valid_out);
 end
 
 
 always_ff @( posedge clk_in ) begin
     if(rst_in)begin
-        was_vaid<=0;
+        was_valid<=0;
     end else begin
-        was_vaid<= valid_out;
+        was_valid<= valid_out;
     end
-
-    
 end
 
 
