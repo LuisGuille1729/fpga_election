@@ -61,12 +61,8 @@ module redstone_repeater #(
         end
     end
 
-    logic[REGISTER_SIZE-1:0] store_out;
 
     always_comb begin 
-        case (repeater_state)
-            default: data_out = store_out;
-        endcase
         data_valid_out =   repeater_state!= WRITING;
     end
     bram_blocks_rw #(
@@ -80,7 +76,7 @@ module redstone_repeater #(
         .write_next_block_valid_in(data_valid_in),   
         .write_block_in(data_in),
         .read_next_block_valid_in(repeater_state == OUTPUTTING && prev_data_consumed_in), 
-        .read_block_out(store_out),
+        .read_block_out(data_out),
         .read_block_pipe2_valid_out()
     );
 
