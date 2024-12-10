@@ -11,7 +11,6 @@ logic[31:0] feedback;
 
 logic [31:0] random, random_next, random_done;
 
-assign rand_out = feedback;
 localparam REGISTER_SIZE = 32;
 localparam NUM_BLOCKS = 4096/REGISTER_SIZE;
 logic[$clog2(NUM_BLOCKS):0] curr_count;

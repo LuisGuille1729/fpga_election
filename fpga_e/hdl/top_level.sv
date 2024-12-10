@@ -49,28 +49,17 @@ module top_level
   localparam NUM_T_BLOCKS = T_SIZE/REGISTER_SIZE;
 
 
-  logic [NUM_N_BLOCKS-1:0][REGISTER_SIZE-1:0] n;
-  logic [NUM_N_SQUARED_BLOCKS-1:0][REGISTER_SIZE-1:0] n_squared; 
-  logic [NUM_K_BLOCKS-1:0][REGISTER_SIZE-1:0] k;
 
 
   // old verilog constructs for usage of readmemh. No workarounds from our knowledge :( 
-  reg [REGISTER_SIZE-1:0] temp_array_n[NUM_N_BLOCKS-1:0];
-  reg [REGISTER_SIZE-1:0] temp_array_n_squared[NUM_N_SQUARED_BLOCKS-1:0];
-  reg [REGISTER_SIZE-1:0] temp_array_k[NUM_N_SQUARED_BLOCKS-1:0];
+  reg [REGISTER_SIZE-1:0] n[NUM_N_BLOCKS-1:0];
+  reg [REGISTER_SIZE-1:0] n_squared[NUM_N_SQUARED_BLOCKS-1:0];
+  reg [REGISTER_SIZE-1:0] k[NUM_N_SQUARED_BLOCKS-1:0];
 
   initial begin
-      $readmemh("n.mem", temp_array_n); // Read into the temporary array
-      for (int i = 0; i < NUM_N_BLOCKS; i++) begin
-          n[i] = temp_array_n[i];          // Map values to the multi-dimensional array
-      end
-      $readmemh("n_squared.mem", temp_array_n_squared); // Read into the temporary array
-      $readmemh("k.mem", temp_array_k); // Read into the temporary array
-      for (int i = 0; i < NUM_N_SQUARED_BLOCKS; i++) begin
-          n_squared[i] = temp_array_n_squared[i];          // Map values to the multi-dimensional array
-          k[i] = temp_array_k[i];
-      end
-
+      $readmemh("n.mem", n); // Read into the temporary array
+      $readmemh("n_squared.mem", n_squared); // Read into the temporary array
+      $readmemh("k.mem", k); // Read into the temporary array
   end
 
   
@@ -103,6 +92,7 @@ module top_level
     .data_byte_out(data_received_byte)
   );
 
+logic[REGISTER_SIZE-1:0] sum;
   always_ff @( posedge clk_100mhz) begin
     if (sys_rst) begin
 
@@ -115,9 +105,16 @@ module top_level
       led[6] <= 0;
       led[7] <= 0;
       led[8] <= 0;
+      led[9] <=0;
+      led[10] <=0;
+      led[11] <=0;
+      led[12] <=0;
+      led[13] <=0;
+      sum <=0;
 
     end
     else begin
+      sum <= sum+ 
       led[0] <= (valid_data) ? 1'b1 : led[0];
       led[1] <= (valid_data) ? data_received_byte[0] : led[1];
       led[2] <= vote_procesor_states == TERMINAL;
@@ -127,6 +124,15 @@ module top_level
       led[6] <= storage_valid? 1: led[6];
       led[7] <= data_pe_valid? 1: led[7];
       led[8] <= trigger_uart_send? 1: led[8];
+      led[9] <=candidate_vote? 1: led[9];
+      led[10] <= request_new_vote? 1: led[10];
+      // led[11] <= expo_n_squared_select_index ==  NUM_N_SQUARED_BLOCKS-1? 1: led[11];
+      // led[12] <= expo_k_select_index ==  NUM_K_BLOCKS-1? 1: led[12];
+      // led[13] <= n_select_index ==  NUM_N_BLOCKS-1? 1: led[13];
+
+
+
+
     end
 
   end
@@ -166,7 +172,7 @@ end
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .valid_in(valid_data),
-    .request_new_vote(request_new_vote || vote_procesor_states ==  TRIGGERED),
+    .request_new_vote(request_new_vote || vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
     .new_byte_in(data_received_byte),
     .vote_out(candidate_vote),
     .valid_vote_out(valid_processed_vote)
@@ -177,7 +183,7 @@ end
   logic random_valid;
 
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
-  LFSR32Fake#()
+  LFSR32Fake#() //Todo replace with real LSFR once done debugging 
   rng_stream
   (
     .rst_in(sys_rst),
@@ -240,7 +246,7 @@ candidate_encryptor  #(
     .k_in(candidate_k_in),
     .exponentiator_in(expo_data_out),
     .valid_in(expo_valid),
-    .candidate_in(candidate_vote),
+    .candidate_in(1), // TODO this is broken for som reason the candidate reading is not behaving correctly
     .consumed_k_out(candidate_consumed_k_out),
     .consumed_n_squared_out(candidate_consumed_n_squared_out),
     .consumed_vote_out(request_new_vote),
@@ -322,23 +328,6 @@ spi_con #(
     .chip_sel_in(cs) // (CS) 
   );
 
-
-
-
-// module byte_repeater  #(
-//     parameter REGISTER_SIZE = 32,
-//     parameter BITS_IN_NUM = 4096
-//     )
-//     (
-//         input wire [REGISTER_SIZE-1:0] data_in,
-//         input wire valid_in,
-//         input wire request_next_byte_in,
-//         input wire rst_in,
-//         input wire clk_in,
-//         output logic [7:0] data_out,
-//         output logic valid_out
-//     );
-
   byte_repeater #(
     .REGISTER_SIZE(REGISTER_SIZE),
     .BITS_IN_NUM(4096)
@@ -359,7 +348,7 @@ spi_con #(
 
   logic uart_tx_busy;
   logic trigger_uart_send;
-  logic byte_to_send;
+  logic[7:0] byte_to_send;
 
   uart_transmit #(.BAUD_RATE(4800)) 
   fpga_to_pc_uart  (
