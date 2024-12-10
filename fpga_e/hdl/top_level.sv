@@ -104,11 +104,33 @@ module top_level
   );
 
   always_ff @( posedge clk_100mhz) begin
-    led[0] <= (valid_data) ? 1'b1 : led[0];
-    led[1] <= (valid_data) ? data_received_byte[0] : led[1];
+    if (sys_rst) begin
 
-    led[2] <= vote_procesor_states == TERMINAL;
+      led[0] <= 0;
+      led[1] <= 0;
+      led[2] <= 0;
+      led[3] <= 0;
+      led[4] <= 0;
+      led[5] <= 0;
+      led[6] <= 0;
+      led[7] <= 0;
+      led[8] <= 0;
+
+    end
+    else begin
+      led[0] <= (valid_data) ? 1'b1 : led[0];
+      led[1] <= (valid_data) ? data_received_byte[0] : led[1];
+      led[2] <= vote_procesor_states == TERMINAL;
+      led[3] <= random_valid? 1: led[3];
+      led[4] <= expo_valid? 1: led[4];
+      led[5] <= candidate_valid? 1: led[5];
+      led[6] <= storage_valid? 1: led[6];
+      led[7] <= data_pe_valid? 1: led[7];
+      led[8] <= trigger_uart_send? 1: led[8];
+    end
+
   end
+
 
   // For now we only send the candidate number
   // (Future: voterID)
@@ -155,7 +177,7 @@ end
   logic random_valid;
 
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
-  LFSR32#()
+  LFSR32Fake#()
   rng_stream
   (
     .rst_in(sys_rst),
@@ -263,6 +285,9 @@ spi_con #(
         .chip_sel_out(cs),
         .ready_out(request_next_repeater_input)
       );
+
+
+    assign led[15] = request_next_repeater_input;
 
 
 

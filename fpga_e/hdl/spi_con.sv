@@ -31,6 +31,8 @@ module spi_con
   logic [DATA_WIDTH-1:0] data_received;
   logic [DATA_WIDTH-1:0] transfer_stage; // expressed in one-hot encoding for ease
 
+  assign ready_out = !began_transferring;
+
   always_ff @( posedge clk_in ) begin
 
     if (rst_in) begin // when reset
@@ -50,7 +52,6 @@ module spi_con
 
       // Begin transfer
       if (trigger_in && !began_transferring) begin // triggered, record data_in, begin transfer
-       ready_out <= 0;
         began_transferring <= 1'b1;
         transfer_stage <= 1 << (DATA_WIDTH-1);
 
@@ -89,7 +90,6 @@ module spi_con
 
     if (data_valid_out) begin
       data_valid_out <= 1'b0;
-      ready_out <= 1;
     end
 
     end // else not rst_in
