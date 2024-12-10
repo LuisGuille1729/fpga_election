@@ -105,12 +105,12 @@ logic[REGISTER_SIZE-1:0] sum;
       led[6] <= 0;
       led[7] <= 0;
       led[8] <= 0;
-      led[9] <=0;
-      led[10] <=0;
-      led[11] <=0;
-      led[12] <=0;
-      led[13] <=0;
-      sum <=0;
+      // led[9] <=0;
+      // led[10] <=0;
+      // led[11] <=0;
+      // led[12] <=0;
+      // led[13] <=0;
+
 
     end
     else begin
@@ -124,18 +124,19 @@ logic[REGISTER_SIZE-1:0] sum;
       led[6] <= storage_valid? 1: led[6];
       led[7] <= data_pe_valid? 1: led[7];
       led[8] <= trigger_uart_send? 1: led[8];
-      led[9] <=candidate_vote? 1: led[9];
-      led[10] <= request_new_vote? 1: led[10];
+      // led[9] <=candidate_vote? 1: led[9];
+      // led[10] <= request_new_vote? 1: led[10];
       // led[11] <= expo_n_squared_select_index ==  NUM_N_SQUARED_BLOCKS-1? 1: led[11];
       // led[12] <= expo_k_select_index ==  NUM_K_BLOCKS-1? 1: led[12];
       // led[13] <= n_select_index ==  NUM_N_BLOCKS-1? 1: led[13];
-
-
-
-
     end
-
   end
+
+  logic [1:0] read_counter;
+  logic [1:0] write_counter;
+
+  assign led[10:9] = read_counter;
+  assign led[12:11] = write_counter;
 
 
   // For now we only send the candidate number
@@ -172,16 +173,18 @@ end
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .valid_in(valid_data),
-    .request_new_vote(request_new_vote || vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
+    .request_new_vote(vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
     .new_byte_in(data_received_byte),
     .vote_out(candidate_vote),
-    .valid_vote_out(valid_processed_vote)
+    .valid_vote_out(valid_processed_vote),
+    .read_counter(read_counter),
+    .write_counter(write_counter)
   );
+  
 
   // GENERATE RANDOM NUMBER
   logic [REGISTER_SIZE-1:0] random_block;
   logic random_valid;
-
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
   LFSR32Fake#() //Todo replace with real LSFR once done debugging 
   rng_stream
@@ -246,7 +249,7 @@ candidate_encryptor  #(
     .k_in(candidate_k_in),
     .exponentiator_in(expo_data_out),
     .valid_in(expo_valid),
-    .candidate_in(1), // TODO this is broken for som reason the candidate reading is not behaving correctly
+    .candidate_in(candidate_vote), // TODO this is broken for som reason the candidate reading is not behaving correctly
     .consumed_k_out(candidate_consumed_k_out),
     .consumed_n_squared_out(candidate_consumed_n_squared_out),
     .consumed_vote_out(request_new_vote),
