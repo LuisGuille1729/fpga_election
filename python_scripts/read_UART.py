@@ -3,7 +3,7 @@ import sys
 import time
 
 SERIAL_PORTNAME = "/dev/ttyUSB1"
-BAUD = 4800
+BAUD = 9600
 
 ser = serial.Serial(SERIAL_PORTNAME, BAUD)
 
@@ -12,4 +12,4 @@ def read_UART():
 
 while True:
     time.sleep(0.1)
-    print(hex(int.from_bytes(ser.read(4),byteorder='little')))
+    print(hex(int.from_bytes(ser.read(512),byteorder='little')))

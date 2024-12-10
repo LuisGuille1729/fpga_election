@@ -105,38 +105,29 @@ logic[REGISTER_SIZE-1:0] sum;
       led[6] <= 0;
       led[7] <= 0;
       led[8] <= 0;
-      // led[9] <=0;
-      // led[10] <=0;
-      // led[11] <=0;
-      // led[12] <=0;
-      // led[13] <=0;
+      led[9] <= 0;
+      led[10] <= 0;
+      led[11] <= 0;
+      led[12] <= 0;
+      led[13] <= 0;
 
 
     end
     else begin
-      sum <= sum+ 
       led[0] <= (valid_data) ? 1'b1 : led[0];
-      led[1] <= (valid_data) ? data_received_byte[0] : led[1];
-      led[2] <= vote_procesor_states == TERMINAL;
-      led[3] <= random_valid? 1: led[3];
+      led[1] <= (valid_data) ? data_received_byte[0] : led[1];  // Whether or not there was valid data received
+      led[2] <= vote_procesor_states == TERMINAL;  // Whether or not the vote-processor state is terminal
+      led[3] <= random_valid? 1: led[3];  // Whether the random number generated is valid
       led[4] <= expo_valid? 1: led[4];
       led[5] <= candidate_valid? 1: led[5];
       led[6] <= storage_valid? 1: led[6];
-      led[7] <= data_pe_valid? 1: led[7];
-      led[8] <= trigger_uart_send? 1: led[8];
-      // led[9] <=candidate_vote? 1: led[9];
-      // led[10] <= request_new_vote? 1: led[10];
+      // led[7] <= data_pe_valid? 1: led[7];
+      // led[8] <= trigger_uart_send? 1: led[8];
       // led[11] <= expo_n_squared_select_index ==  NUM_N_SQUARED_BLOCKS-1? 1: led[11];
       // led[12] <= expo_k_select_index ==  NUM_K_BLOCKS-1? 1: led[12];
       // led[13] <= n_select_index ==  NUM_N_BLOCKS-1? 1: led[13];
     end
   end
-
-  logic [1:0] read_counter;
-  logic [1:0] write_counter;
-
-  assign led[10:9] = read_counter;
-  assign led[12:11] = write_counter;
 
 
   // For now we only send the candidate number
@@ -146,7 +137,7 @@ logic[REGISTER_SIZE-1:0] sum;
 //begin processing votes  button
 logic begin_processing;
 assign begin_processing = btn[1];
-enum  {IDLE,TRIGGERED, TERMINAL } vote_procesor_states;
+enum  {IDLE, TRIGGERED, TERMINAL } vote_procesor_states;
 logic restart_processor;
 assign restart_processor = btn[2];
 always_ff @( posedge clk_100mhz ) begin
@@ -173,20 +164,17 @@ end
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .valid_in(valid_data),
-    .request_new_vote(vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
+    .request_new_vote(request_new_vote || vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
     .new_byte_in(data_received_byte),
     .vote_out(candidate_vote),
-    .valid_vote_out(valid_processed_vote),
-    .read_counter(read_counter),
-    .write_counter(write_counter)
+    .valid_vote_out(valid_processed_vote)
   );
-  
 
   // GENERATE RANDOM NUMBER
   logic [REGISTER_SIZE-1:0] random_block;
   logic random_valid;
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
-  LFSR32Fake#() //Todo replace with real LSFR once done debugging 
+  LFSR32#() //Todo replace with real LSFR once done debugging 
   rng_stream
   (
     .rst_in(sys_rst),
@@ -353,7 +341,7 @@ spi_con #(
   logic trigger_uart_send;
   logic[7:0] byte_to_send;
 
-  uart_transmit #(.BAUD_RATE(4800)) 
+  uart_transmit #(.BAUD_RATE(9600)) 
   fpga_to_pc_uart  (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
@@ -457,4 +445,3 @@ spi_con #(
 endmodule // top_level
 
 `default_nettype wire
-
