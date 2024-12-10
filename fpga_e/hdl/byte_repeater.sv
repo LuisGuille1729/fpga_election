@@ -40,7 +40,7 @@ module byte_repeater  #(
     (  
         .clk_in(clk_in),
         .rst_in(rst_in),
-        .evt_in(repeater_state == BYTE3),
+        .evt_in(repeater_state == BYTE3 &&request_next_byte_in ),
         .count_out(read_counter_idx)
     );
 

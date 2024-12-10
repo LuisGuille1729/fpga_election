@@ -13,86 +13,73 @@ module redstone_repeater #(
         output logic[REGISTER_SIZE-1:0] data_out,
         output logic data_valid_out
     );
-
+    localparam NUM_BLOCKS = BITS_IN_NUM / REGISTER_SIZE;
     localparam BRAM_WIDTH = REGISTER_SIZE;
-    localparam BRAM_DEPTH = BITS_IN_NUM / REGISTER_SIZE;
-    localparam MAX_ADDRESS = BRAM_DEPTH;
-    localparam ADDRESS_SIZE = $clog2(MAX_ADDRESS);
+    localparam BRAM_DEPTH = NUM_BLOCKS;
+    logic read_next_chunk_signal;
+    enum  {WRITING,OUTPUTTING} repeater_state;
 
-    logic busy;
-    logic done_writing;
-    logic [ADDRESS_SIZE-1:0] next_addra;
-    logic [ADDRESS_SIZE-1:0] next_addrb;
-    logic valid_out_pipe [1:0];
+    logic [$clog2(BRAM_DEPTH)-1:0] write_counter_idx;
+    evt_counter #(
+        .MAX_COUNT(BRAM_DEPTH),
+        .COUNT_START(0))
+   write_counter_module
+    (  
+        .clk_in(clk_in),
+        .rst_in(rst_in || repeater_state == OUTPUTTING),
+        .evt_in(data_valid_in),
+        .count_out(write_counter_idx)
+    );
 
-    always_ff @(posedge clk_in) begin
+    logic [$clog2(BRAM_DEPTH)-1:0] read_counter_idx;
+    evt_counter #(
+        .MAX_COUNT(BRAM_DEPTH),
+        .COUNT_START(0))
+   read_counter_module
+    (  
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .evt_in(repeater_state == OUTPUTTING && prev_data_consumed_in),
+        .count_out(read_counter_idx)
+    );
+
+
+    always_ff @( posedge clk_in ) begin
         if (rst_in) begin
-            busy <= 0;
-            done_writing <= 0;
-            next_addra <= 0;
-            next_addrb <= 0;
-
-            data_valid_out <= 0;
-            valid_out_pipe[0] <= 0;
+            repeater_state <= WRITING;
+        end else begin
+            case (repeater_state)
+                WRITING: begin
+                    repeater_state <= write_counter_idx== BRAM_DEPTH-1? OUTPUTTING : WRITING;
+                end
+                OUTPUTTING: begin
+                    if (prev_data_consumed_in) begin
+                    repeater_state<= read_counter_idx == BRAM_DEPTH-1? WRITING: OUTPUTTING;
+                    end
+                end
+            endcase
         end
-        else if (data_valid_in) begin
-            busy <= 1;
-            if (next_addrb == MAX_ADDRESS - 1) begin
-                done_writing <= 1;  // Should no longer increment next_addrb, even though it doesn't really matter
-            end
-            else begin
-                next_addrb <= next_addrb + 1;
-            end
-        end
-        else if (busy) begin
-            if ((next_addra == MAX_ADDRESS - 1) && prev_data_consumed_in) begin
-                busy <= 0;
-                done_writing <= 0;
-                next_addra <= 0;
-                next_addrb <= 0;
-
-                data_valid_out <= 0;
-                valid_out_pipe[0] <= 1;
-            end
-            else if (done_writing & prev_data_consumed_in) begin
-                valid_out_pipe[0] <= 1;
-                next_addra <= next_addra + 1;
-            end
-            else begin
-                valid_out_pipe[0] <= 0;
-            end
-        end
-        else begin
-            valid_out_pipe[0] <= 0;
-        end
-
-        data_valid_out <= rst_in ? 0 : valid_out_pipe[0];
-        valid_out_pipe[1] <= rst_in ? 0 : valid_out_pipe[0];
     end
 
-    xilinx_true_dual_port_read_first_2_clock_ram
-     #(
-        .RAM_WIDTH(BRAM_WIDTH),
-        .RAM_DEPTH(BRAM_DEPTH)) encryptor_bram  // Stores the outputs from the encryptor
-       (
-        // PORT A
-        .addra(next_addra),
-        .dina(),
-        .clka(clk_in),
-        .wea(1'b0),
-        .ena(1'b1),
-        .rsta(rst_in),
-        .regcea(1'b1),
-        .douta(data_out),
-        // PORT B
-        .addrb(next_addrb),
-        .dinb(data_in),
-        .clkb(clk_in),
-        .web(data_valid_in),
-        .enb(1'b1),
-        .rstb(rst_in),
-        .regceb(1'b1),
-        .doutb() // we only use port B for writes!
-        );
+
+    always_comb begin 
+        data_valid_out =   repeater_state!= WRITING;
+    end
+    bram_blocks_rw #(
+        .REGISTER_SIZE(REGISTER_SIZE),
+        .NUM_BLOCKS(NUM_BLOCKS)
+    ) 
+    repeater_bram
+    (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .write_next_block_valid_in(data_valid_in),   
+        .write_block_in(data_in),
+        .read_next_block_valid_in(repeater_state == OUTPUTTING && prev_data_consumed_in), 
+        .read_block_out(data_out),
+        .read_block_pipe2_valid_out()
+    );
+
+
 endmodule
 `default_nettype wire
