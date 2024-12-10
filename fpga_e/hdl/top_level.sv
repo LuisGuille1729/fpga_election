@@ -286,19 +286,19 @@ spi_con #(
 
 
 
-module byte_repeater  #(
-    parameter REGISTER_SIZE = 32,
-    parameter BITS_IN_NUM = 4096
-    )
-    (
-        input wire [REGISTER_SIZE-1:0] data_in,
-        input wire valid_in,
-        input wire request_next_byte_in,
-        input wire rst_in,
-        input wire clk_in,
-        output logic [7:0] data_out,
-        output logic valid_out
-    );
+// module byte_repeater  #(
+//     parameter REGISTER_SIZE = 32,
+//     parameter BITS_IN_NUM = 4096
+//     )
+//     (
+//         input wire [REGISTER_SIZE-1:0] data_in,
+//         input wire valid_in,
+//         input wire request_next_byte_in,
+//         input wire rst_in,
+//         input wire clk_in,
+//         output logic [7:0] data_out,
+//         output logic valid_out
+//     );
 
   byte_repeater #(
     .REGISTER_SIZE(REGISTER_SIZE),
@@ -313,8 +313,8 @@ module byte_repeater  #(
     .valid_in(data_pe_valid),
 
     .request_next_byte_in(!uart_tx_busy),
-    .valid_out(trigger_uart_send)
-    .data_out(byte_to_send),
+    .valid_out(trigger_uart_send),
+    .data_out(byte_to_send)
   );
 
 

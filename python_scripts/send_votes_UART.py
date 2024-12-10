@@ -4,7 +4,7 @@ import time
 import random
 
 SERIAL_PORTNAME = "/dev/cu.usbserial-8874292301971"
-BAUD = 9600
+BAUD = 4800
 
 ser = serial.Serial(SERIAL_PORTNAME, BAUD)
 
