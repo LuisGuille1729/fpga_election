@@ -6,7 +6,9 @@ module vote_processor  (
     input wire [7:0] new_byte_in,
     input wire request_new_vote,
     output logic vote_out,
-    output logic valid_vote_out
+    output logic valid_vote_out,
+    output logic[$clog2(MAX_VOTES)-1:0] read_counter,
+    output logic[$clog2(MAX_VOTES)-1:0] write_counter
   );
 
   logic[4:0] sum_ones = new_byte_in[0] + new_byte_in[1] + new_byte_in[2] +  new_byte_in[3] 
@@ -18,15 +20,15 @@ module vote_processor  (
 
   localparam VOTE_SIZE = 1;
   localparam NUM_VOTE_BLOCKS = MAX_VOTES/VOTE_SIZE; 
-  logic[$clog2(MAX_VOTES)-1:0] read_counter;
-  logic[$clog2(MAX_VOTES)-1:0] write_counter;
+  // logic[$clog2(MAX_VOTES)-1:0] read_counter;
+  // logic[$clog2(MAX_VOTES)-1:0] write_counter;
 
   evt_counter #(.MAX_COUNT(MAX_VOTES))
   read_counter_inst
   ( 
     .clk_in(clk_in),
     .rst_in(rst_in),
-    .evt_in(request_new_vote),
+    .evt_in(request_new_vote && read_possible),
     .count_out(read_counter)
   );
 
@@ -41,8 +43,8 @@ module vote_processor  (
 
   logic read_possible;
   assign read_possible = read_counter != write_counter;
-  bram_blocks_rw #(
-    .REGISTER_SIZE(1),
+  bram_blocks_rw_shifted #(
+    .REGISTER_SIZE(VOTE_SIZE),
     .NUM_BLOCKS(NUM_VOTE_BLOCKS)
   ) block_module (
     .clk_in(clk_in),
