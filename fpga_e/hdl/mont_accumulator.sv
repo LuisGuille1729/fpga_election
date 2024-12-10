@@ -76,8 +76,8 @@ module mont_accumulator #(
             endcase
         end      
     end
-    fsm_multiplier_parallel#(
-        .REGISTER_SIZE_IN(REGISTER_SIZE),
+    fsm_multiplier#(
+        .REGISTER_SIZE(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_NUM)
     )
     markiplier // iron lung?
@@ -95,7 +95,7 @@ module mont_accumulator #(
 
     logic mont_valid;
 
-    montgomery_reduce_parallel#(
+    montgomery_reduce#(
         .REGISTER_SIZE(REGISTER_SIZE),
         .NUM_BLOCKS(NUM_BLOCKS),
         .R(R)

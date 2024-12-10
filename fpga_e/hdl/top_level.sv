@@ -11,8 +11,15 @@ module top_level
     output logic [0:0] dclk,
     output logic [0:0] cs,
 
-    output logic uart_txd
+    output logic uart_txd,
+
+    output logic [15:0] led,
+    output logic [2:0] rgb0, 
+    output logic [2:0] rgb1
   );
+  assign rgb0 = 0;
+  assign rgb1 = 0;
+
 
   logic   sys_rst;
   assign sys_rst = btn[0];
@@ -95,6 +102,13 @@ module top_level
     .new_data_out(valid_data),
     .data_byte_out(data_received_byte)
   );
+
+  always_ff @( posedge clk_100mhz) begin
+    led[0] <= (valid_data) ? 1'b1 : led[0];
+    led[1] <= (valid_data) ? data_received_byte[0] : led[1];
+
+    led[2] <= vote_procesor_states == TERMINAL;
+  end
 
   // For now we only send the candidate number
   // (Future: voterID)
