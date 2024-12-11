@@ -189,7 +189,7 @@ end
   logic [REGISTER_SIZE-1:0] random_block;
   logic random_valid;
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
-  LFSR32Fake#() //Todo replace with real LSFR once done debugging 
+  LFSR32#() //Todo replace with real LSFR once done debugging 
   rng_stream
   (
     .rst_in(sys_rst ),

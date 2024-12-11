@@ -33,7 +33,7 @@ while True:
         # print(f"True Ciphertext: {ciphertext}\n")
 
         decrypted_vote = decrypt(keys, ciphertext)
-        print(f"(Voted for {decrypted_vote})\n")
+        print(f"[Software Check] Decrypt(ciphertext): {decrypted_vote}\n")
 
         # wrong_decrypted = decrypt(keys, ciphertext_mont)
         # print("Wrong decrypt", wrong_decrypted)
