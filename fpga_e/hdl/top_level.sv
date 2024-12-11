@@ -174,7 +174,7 @@ end
   logic [REGISTER_SIZE-1:0] random_block;
   logic random_valid;
   // generates a 4096 bit output in register size sizes, but the topmost 2048 bits are 0
-  LFSR32#() //Todo replace with real LSFR once done debugging 
+  LFSR32Fake#() //Todo replace with real LSFR once done debugging 
   rng_stream
   (
     .rst_in(sys_rst),
@@ -419,7 +419,7 @@ spi_con #(
   
   n_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst || (n_inner_block_bit_select_index == (REGISTER_SIZE-1) && (n_block_select_index == NUM_N_BLOCKS-1))),
+    .rst_in(sys_rst),
     .evt_in(consumed_n_out && n_inner_block_bit_select_index == (REGISTER_SIZE-1)),
     .count_out(n_block_select_index)
   );
