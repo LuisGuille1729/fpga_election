@@ -23,6 +23,7 @@ module top_level
 
   logic   sys_rst;
   assign sys_rst = btn[0];
+  
 
 
   // CONSTANTS VALUES  
@@ -158,13 +159,27 @@ end
   logic valid_processed_vote;
   logic request_new_vote;
 
+  logic request_new_vote_piped;
+
+  pipeliner#(
+        .PIPELINE_STAGE_COUNT(10000),
+        .DATA_BIT_SIZE(1)
+    )
+    request_stall (
+        .clk_in(clk_100mhz),
+        .rst_in(sys_rst),
+        .data_in(request_new_vote),
+        .data_out(request_new_vote_piped)
+    );
+
+
   vote_processor #(
 
   ) process_vote(
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
     .valid_in(valid_data),
-    .request_new_vote(request_new_vote || vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
+    .request_new_vote(request_new_vote_piped || vote_procesor_states ==  TRIGGERED), // todo this workflow is also not working for some reason. Only 1 vote is sent
     .new_byte_in(data_received_byte),
     .vote_out(candidate_vote),
     .valid_vote_out(valid_processed_vote)
@@ -177,7 +192,7 @@ end
   LFSR32Fake#() //Todo replace with real LSFR once done debugging 
   rng_stream
   (
-    .rst_in(sys_rst),
+    .rst_in(sys_rst ),
     .clk_in(clk_100mhz),
     .trigger_in(valid_processed_vote),
     .rand_out(random_block),
@@ -201,7 +216,7 @@ end
   ) expo 
 (
     .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst || request_new_vote),
 
     .n_squared_in(expo_n_squared_in),
     .k_in(expo_k_in),
@@ -232,7 +247,7 @@ candidate_encryptor  #(
 ) encryptorator
  (
     .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst ||request_new_vote ),
     .n_squared_in(candidate_n_squared_in),
     .k_in(candidate_k_in),
     .exponentiator_in(expo_data_out),
@@ -368,7 +383,7 @@ spi_con #(
   evt_counter #(.MAX_COUNT(NUM_N_SQUARED_BLOCKS))
   expo_n_squared_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst || request_new_vote ),
     .evt_in(expo_consumed_n_squared_out),
     .count_out(expo_n_squared_select_index)
   );
@@ -379,7 +394,7 @@ spi_con #(
   evt_counter #(.MAX_COUNT(NUM_N_SQUARED_BLOCKS))
   cand_n_squared_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst|| request_new_vote),
     .evt_in(candidate_consumed_n_squared_out),
     .count_out(candidate_n_squared_select_index)
   );
@@ -392,7 +407,7 @@ spi_con #(
   evt_counter #(.MAX_COUNT(NUM_K_BLOCKS))
   expo_k_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst|| request_new_vote),
     .evt_in(expo_consumed_k_out),
     .count_out(expo_k_select_index)
   );
@@ -405,7 +420,7 @@ spi_con #(
   evt_counter #(.MAX_COUNT(NUM_K_BLOCKS))
   cand_k_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst|| request_new_vote),
     .evt_in(candidate_consumed_k_out),
     .count_out(cand_k_select_index)
   );
@@ -419,7 +434,7 @@ spi_con #(
   
   n_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst|| request_new_vote),
     .evt_in(consumed_n_out && n_inner_block_bit_select_index == (REGISTER_SIZE-1)),
     .count_out(n_block_select_index)
   );
@@ -429,7 +444,7 @@ spi_con #(
   n_inner_block_bit_select
   (
     .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst|| request_new_vote),
     .evt_in(consumed_n_out),
     .count_out(n_inner_block_bit_select_index)
   );

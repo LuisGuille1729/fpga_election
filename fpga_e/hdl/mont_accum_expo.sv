@@ -27,7 +27,7 @@ montgomery_squarer_stream #(
     .R(BITS_IN_NUM)
 ) montgomery_squarer_stream_inst(
     .clk_in(clk_in),
-    .rst_in(rst_in),
+    .rst_in(rst_in ||valid_out),
     .N_in(n_squared_in),
     .k_in(k_in),
     .reduced_modulo_block_in(reduced_modulo_block_in),

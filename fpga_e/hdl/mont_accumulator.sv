@@ -37,6 +37,10 @@ module mont_accumulator #(
     assign mont_valid_out = mont_valid;
     enum  {start,stage1,stage2,stage3, first_accum, other_accums} accum_state; 
 
+    logic prev_valid;
+
+
+
     localparam BRAM_WIDTH = REGISTER_SIZE;
     // Double the depth in order to read and write twice (from two separate regions) from the same BRAM in the same cycle
     localparam BRAM_DEPTH = BITS_IN_NUM / BRAM_WIDTH;
@@ -52,6 +56,9 @@ module mont_accumulator #(
     logic [REGISTER_SIZE-1:0] a_in;
     logic [REGISTER_SIZE-1:0] b_in;
     // logic for selecting first input to multiplier
+
+    logic hard_reset;
+    assign hard_reset =  rst_in || (prev_valid && !valid_out);
     always_comb begin 
         if (accum_state == first_accum) begin
             case (addra)
@@ -79,12 +86,14 @@ module mont_accumulator #(
     logic[$clog2(BITS_IN_N)-1:0] cycle_idx;
     always_ff @( posedge clk_in ) begin
 
-        if (rst_in)begin
+        if (hard_reset)begin
             accum_state<= start; 
             addra<=0;
             consumed_n_out<=0;
             cycle_idx<=0;
+            prev_valid<=0;
         end else begin
+            prev_valid<= valid_out;
             case (accum_state)
                 start : begin
                     addra<=1;
@@ -149,7 +158,7 @@ module mont_accumulator #(
         .n_in(a_in),
         .m_in(b_in),
         .valid_in(valid_in),
-        .rst_in(rst_in),
+        .rst_in(hard_reset),
         .clk_in(clk_in),
         .data_out(mul_out),
         .valid_out(mul_valid_out),
@@ -165,7 +174,7 @@ module mont_accumulator #(
         .R(R)
     ) monty_gatorade (
         .clk_in(clk_in),
-        .rst_in(rst_in),
+        .rst_in(hard_reset),
         .valid_in(mul_valid_out),
         .T_block_in(mul_out),   // the number we want to reduce
         
