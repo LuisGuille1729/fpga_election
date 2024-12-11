@@ -182,10 +182,9 @@ module fsm_multiplier  #(
                 WRITING: begin
                     // Write n and m into BRAM
                     if (valid_in) begin
-                    if (n_m_bram_A_addr != (BRAM_REGION_SIZE-1)) begin
-                        n_m_bram_A_addr <= n_m_bram_A_addr + 1;
-                        n_m_bram_A_write_data_block <= n_in;
-                    end
+                    
+                    n_m_bram_A_addr <= n_m_bram_A_addr + 1;
+                    n_m_bram_A_write_data_block <= n_in;
 
                     n_m_bram_B_addr <= n_m_bram_B_addr + 1;
                     n_m_bram_B_write_data_block <= m_in;  
@@ -200,7 +199,8 @@ module fsm_multiplier  #(
                     else if (n_m_bram_A_addr == (BRAM_REGION_SIZE-1)) begin
                         state <= COMPUTING;
 
-                        n_m_bram_A_addr <= 0;
+                        // if (!valid_in)
+                            n_m_bram_A_addr <= 0;
                         n_m_bram_B_addr <= BRAM_REGION_SIZE;    // start at 128
 
                         n_m_reading_valid <= 1;
