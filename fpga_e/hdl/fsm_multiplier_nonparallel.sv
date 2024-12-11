@@ -181,8 +181,10 @@ module fsm_multiplier_nonparallel  #(
                 WRITING: begin
                     // Write n and m into BRAM
                     if (valid_in) begin
-                    n_m_bram_A_addr <= n_m_bram_A_addr + 1;
-                    n_m_bram_A_write_data_block <= n_in;
+                    if (n_m_bram_A_addr != (BRAM_REGION_SIZE-1)) begin
+                        n_m_bram_A_addr <= n_m_bram_A_addr + 1;
+                        n_m_bram_A_write_data_block <= n_in;
+                    end
 
                     n_m_bram_B_addr <= n_m_bram_B_addr + 1;
                     n_m_bram_B_write_data_block <= m_in;  
@@ -194,7 +196,7 @@ module fsm_multiplier_nonparallel  #(
                     end
 
                     // End writing
-                    if (n_m_bram_A_addr == (BRAM_REGION_SIZE-1)) begin
+                    else if (n_m_bram_A_addr == (BRAM_REGION_SIZE-1)) begin
                         state <= COMPUTING;
 
                         n_m_bram_A_addr <= 0;
@@ -214,7 +216,7 @@ module fsm_multiplier_nonparallel  #(
                     n_m_reading_valid_pipe3 <= n_m_reading_valid_pipe2; // (Correct delay when first data block received is valid)
                     if (!n_m_reading_valid & !n_m_reading_valid_pipe1 & !n_m_reading_valid_pipe2 & !n_m_reading_valid_pipe3) begin // add extra pipe? Should only be 2 cycles
                         state <= OUTPUTING;
-                        accumulator_bram_B_read_addr <= 0; 
+                        // accumulator_bram_B_read_addr <= 0; 
                     end
 
                     // Pipes to know accumulator write address corresponding to accumulator write block

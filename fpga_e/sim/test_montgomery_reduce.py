@@ -10,7 +10,7 @@ from cocotb.triggers import Timer
 from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 
-test_parallel = True
+test_parallel = False
 file_name = "montgomery_reduce_parallel" if test_parallel else "montgomery_reduce"
 
 REGISTER_SIZE = 32

@@ -19,7 +19,7 @@ logic[$clog2(NUM_BLOCKS):0] curr_count;
 assign valid_out = curr_count <NUM_BLOCKS;
 
 
-assign rand_out = curr_count == 0? 1: 0;
+assign rand_out = curr_count == 0? 2: 0;
 always_ff @(posedge clk_in) begin
     if (rst_in) begin
         curr_count <= NUM_BLOCKS;

@@ -412,15 +412,30 @@ spi_con #(
   assign candidate_k_in = k[cand_k_select_index];
 
 
-  logic[$clog2(NUM_N_BLOCKS)-1:0] n_select_index;
-  evt_counter #(.MAX_COUNT(NUM_N_BLOCKS))
+  logic[$clog2(NUM_N_BLOCKS)-1:0] n_block_select_index;
+  evt_counter #(
+    .MAX_COUNT(NUM_N_BLOCKS)
+  )
+  
   n_block_select
   ( .clk_in(clk_100mhz),
     .rst_in(sys_rst),
-    .evt_in(consumed_n_out),
-    .count_out(n_select_index)
+    .evt_in(consumed_n_out && n_inner_block_bit_select_index == (REGISTER_SIZE-1)),
+    .count_out(n_block_select_index)
   );
-  assign n_bit_in = n[n_select_index];
+
+  logic [$clog2(REGISTER_SIZE)-1:0] n_inner_block_bit_select_index;
+  evt_counter #(.MAX_COUNT(REGISTER_SIZE))
+  n_inner_block_bit_select
+  (
+    .clk_in(clk_100mhz),
+    .rst_in(sys_rst),
+    .evt_in(consumed_n_out),
+    .count_out(n_inner_block_bit_select_index)
+  );
+
+
+  assign n_bit_in = n[n_block_select_index][n_inner_block_bit_select_index];
 
 
 

@@ -25,12 +25,18 @@ module mont_accumulator #(
     output logic consumed_n_squared_out,
     output logic[REGISTER_SIZE-1:0] mult_out,
     output logic mult_valid,
-    output logic[50:0] cycles_between_sends // setting for testing purposes 
-);
-    enum  {start,pre_cleaning,cleaning, idle, first_accum, other_acum,outputing} accum_state; 
+    output logic[50:0] cycles_between_sends, // setting for testing purposes
+    output logic mont_valid_out,
+    output logic [REGISTER_SIZE-1:0] annoy_signal,
 
-    assign mult_out = mul_out;
-    assign mult_valid = mul_valid_out;
+    output logic [REGISTER_SIZE-1:0] r_0,
+    output logic [REGISTER_SIZE-1:0] r_1
+
+
+);
+    assign mont_valid_out = mont_valid;
+    enum  {start,stage1,stage2,stage3, first_accum, other_accums} accum_state; 
+
     localparam BRAM_WIDTH = REGISTER_SIZE;
     // Double the depth in order to read and write twice (from two separate regions) from the same BRAM in the same cycle
     localparam BRAM_DEPTH = BITS_IN_NUM / BRAM_WIDTH;
@@ -39,25 +45,18 @@ module mont_accumulator #(
     localparam BLOCKS_TO_SEND = BITS_IN_NUM / REGISTER_SIZE;
     localparam NUM_BLOCKS = 2*BITS_IN_NUM / REGISTER_SIZE;
     localparam BITS_IN_N = 2048;   
-    logic [REGISTER_SIZE-1:0] visual_dif;
-    assign visual_dif = a_in-b_in;
-    logic b_is_input;
-    assign b_is_input = b_in == squarer_streamer_in;
     
     //addresses to read from 2 clock cycles in future
     logic [ADDR_WIDTH-1:0]     addra;
     logic [BRAM_WIDTH-1:0]     douta;
-
-    logic [REGISTER_SIZE-1:0] mul_out;
-    logic mul_valid_out;
     logic [REGISTER_SIZE-1:0] a_in;
     logic [REGISTER_SIZE-1:0] b_in;
     // logic for selecting first input to multiplier
     always_comb begin 
-        if (accum_state == idle || accum_state == first_accum) begin
-            case (store_idx)
-                0: a_in = r_0;
-                1: a_in = r_1;
+        if (accum_state == first_accum) begin
+            case (addra)
+                2: a_in = r_0;
+                3: a_in = r_1;
                 default: a_in = douta; 
             endcase
         end else begin
@@ -66,16 +65,81 @@ module mont_accumulator #(
     end
     //logic for selecting second input for multiplier (wrt streamer inputs)
     always_comb begin 
-        if (accum_state == idle || accum_state == first_accum || n_bit_in) begin
+        if (accum_state == first_accum || n_bit_in) begin
             b_in = squarer_streamer_in; 
         end else begin
-             case (store_idx)
-                0: b_in = r_0;
-                1: b_in = r_1;
+             case (addra)
+                2: b_in = r_0;
+                3: b_in = r_1;
                 default: b_in = douta; 
             endcase
         end      
     end
+    // logic[$clog2(NUM_BLOCKS)-1:0] store_idx;
+    logic[$clog2(BITS_IN_N)-1:0] cycle_idx;
+    always_ff @( posedge clk_in ) begin
+
+        if (rst_in)begin
+            accum_state<= start; 
+            addra<=0;
+            consumed_n_out<=0;
+            cycle_idx<=0;
+        end else begin
+            case (accum_state)
+                start : begin
+                    addra<=1;
+                    accum_state<= stage1;
+                end 
+                stage1 : begin
+                    addra<=2;
+                    accum_state<= stage2;
+                end
+                stage2 : begin
+                    addra<=2;
+                    accum_state<= stage3;
+                    r_0<=douta;
+                end
+                stage3: begin
+                    addra<=2;
+                    accum_state<= first_accum;
+                    r_1<=douta;
+                end
+                first_accum: begin
+                    if (valid_in) begin
+                        if (addra == 1) begin
+                            accum_state <= other_accums;
+                            cycle_idx <= cycle_idx + 1;
+                            consumed_n_out<=1;
+                        end else begin
+                            consumed_n_out<=0;
+                        end
+                        addra <= addra == BRAM_DEPTH-1? 0: addra+1;
+                    end else begin
+                            consumed_n_out<=0;
+                        end
+                end
+                other_accums: begin
+                    if (mont_valid) begin
+                        if (addra == 1) begin
+                            accum_state<= cycle_idx == BITS_IN_N-1? first_accum: other_accums;
+                            cycle_idx<= cycle_idx == BITS_IN_N-1?0:cycle_idx + 1;
+                            consumed_n_out<=1;
+                        end else begin
+                            consumed_n_out<=0;
+                        end
+                        addra <= addra == BRAM_DEPTH-1? 0: addra+1;
+                    end else begin
+                            consumed_n_out<=0;
+                        end
+                end
+            endcase
+        end
+    end
+
+
+    logic [REGISTER_SIZE-1:0] mul_out;
+    logic mul_valid_out;
+
     fsm_multiplier#(
         .REGISTER_SIZE(REGISTER_SIZE),
         .BITS_IN_NUM(BITS_IN_NUM)
@@ -114,112 +178,12 @@ module mont_accumulator #(
         .data_block_out(data_out)
     );
 
-    assign valid_out = accum_state == outputing && mont_valid;
-
-    logic [REGISTER_SIZE-1:0] r_0;
-    logic [REGISTER_SIZE-1:0] r_1;
-    logic final_cleaning;
-    logic[$clog2(NUM_BLOCKS)-1:0] store_idx;
-    logic[$clog2(BITS_IN_N)-1:0] cycle_idx;
-
-    always_ff @( posedge clk_in ) begin
-        if (rst_in)begin
-            accum_state <= start;
-            consumed_n_out <=0;
-            addra <=0;
-            cycles_between_sends<=0;
-        end
-        case (accum_state)
-            start:begin
-                consumed_n_out<=0;
-                cycle_idx<=0;
-                store_idx<=0;
-                accum_state <=pre_cleaning;
-                addra <=1;
-                final_cleaning <=0;
-            end
-            pre_cleaning: begin
-                accum_state <= cleaning;
-                addra <= 2;
-            end
-            cleaning: begin
-                final_cleaning <= ~final_cleaning;
-                r_1 <= douta;
-                if (final_cleaning) begin
-                    accum_state <= idle;
-                end  else begin
-                    r_0 <= douta;
-                end
-            end
-
-            idle: begin
-                if (valid_in) begin
-                    cycles_between_sends<=1;
-                    accum_state <= first_accum;
-                    store_idx <= store_idx + 1;
-                    addra <= addra + 1;
-                end 
-                consumed_n_out <= 0;
-            end
-            first_accum: begin
-                if (valid_in) begin
-                    if (store_idx == BLOCKS_TO_SEND-1) begin
-                        accum_state <= other_acum;
-                        store_idx <=0;
-                        cycle_idx <= 1;
-                        consumed_n_out <= 1;
-                        addra <= 2;
-                    end else begin
-                        store_idx <= store_idx +1;
-                        addra <= addra + 1;
-                    end
-                    cycles_between_sends<=0;
-                end
-            end
-            other_acum: begin
-                if (mont_valid) begin
-                    cycles_between_sends<=0;
-                    if (store_idx == BLOCKS_TO_SEND - 1) begin
-                        accum_state <= cycle_idx ==  BITS_IN_N-1? outputing: other_acum;
-                        store_idx <= 0;
-                        consumed_n_out <= 1;
-                        cycle_idx <= cycle_idx +1;
-                        addra <= 2;
-                    end else begin
-                        store_idx <= store_idx + 1;
-                        consumed_n_out <= 0;
-                        addra <= addra + 1; 
-                    end
-                end else begin
-                   consumed_n_out <= 0; 
-                   cycles_between_sends<=cycles_between_sends+1;
-                end
-            end
-
-            outputing: begin
-                consumed_n_out<=0;
-                if (mont_valid) begin
-                    if (store_idx == BLOCKS_TO_SEND - 1) begin
-                        accum_state <= idle;
-                        store_idx <= 0;
-                        cycle_idx <= 0;
-                        addra <= 2;
-                    end else begin
-                        store_idx <= store_idx + 1;
-                    end
-                end
-                   consumed_n_out <= 0; 
-            end
-        endcase
-
-
-    end
+    assign valid_out = accum_state == first_accum && mont_valid;
 
 
 xilinx_true_dual_port_read_first_2_clock_ram
      #(.RAM_WIDTH(BRAM_WIDTH),
-       .RAM_DEPTH(BRAM_DEPTH)
-       ,
+       .RAM_DEPTH(BRAM_DEPTH),
        .INIT_FILE(`FPATH(R_modN.mem))       
        ) const_storage_bram
        (
@@ -227,7 +191,7 @@ xilinx_true_dual_port_read_first_2_clock_ram
         .addra(addra),
         .dina(0), // we only use port A for reads!
         .clka(clk_in),
-        .wea(1'b0), // read only
+        .wea(0), // read only
         .ena(1'b1),
         .rsta(rst_in),
         .regcea(1'b1),

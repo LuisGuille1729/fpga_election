@@ -52,6 +52,7 @@ module montgomery_squarer_stream #(
         end
         else if (squared_valid_out) begin
             if (data_valid_in) begin
+                if ((block_ctr == NUM_BLOCKS_IN_OUT - 1 && square_exponent_ctr == HIGHEST_EXPONENT - 1))
                 multiplier_blocked <= 0;  // Once we get a new input, unblock the multiplier from a previously completed input
             end
             if (block_ctr == NUM_BLOCKS_IN_OUT - 1) begin

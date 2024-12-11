@@ -1,6 +1,6 @@
 `default_nettype none
 module evt_counter #(
-    parameter MAX_COUNT,
+    parameter MAX_COUNT = 128,
     parameter COUNT_START = 0
     ) (  // Slightly modified version of lab 2's event counter
     input wire          clk_in,
