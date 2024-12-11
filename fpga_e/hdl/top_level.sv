@@ -419,7 +419,7 @@ spi_con #(
   
   n_block_select
   ( .clk_in(clk_100mhz),
-    .rst_in(sys_rst),
+    .rst_in(sys_rst || (n_inner_block_bit_select_index == (REGISTER_SIZE-1) && (n_block_select_index == NUM_N_BLOCKS-1))),
     .evt_in(consumed_n_out && n_inner_block_bit_select_index == (REGISTER_SIZE-1)),
     .count_out(n_block_select_index)
   );

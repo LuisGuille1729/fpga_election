@@ -78,7 +78,8 @@ def generate_keys(generate_new=False, verbose=True):
 
 
 def encrypt(pub_key: Public_Key, plaintext: int):
-    r = random.randint(1, pub_key.n)
+    # r = random.randint(1, pub_key.n)
+    r = 2
 
     cipher = pow(pub_key.g, plaintext, pub_key.n_square) * pow(r, pub_key.n, pub_key.n_square) % pub_key.n_square
 
@@ -105,15 +106,17 @@ def Int_to_ASCII(integer: int, bytes_count: int = 4):
 if __name__ == "__main__":
     keys = generate_keys(generate_new=False, verbose=True)
 
-    plaintext_in = 12345
+    plaintext_in = 1
     ciphertext = encrypt(keys.public, plaintext_in)
-    print("Ciphertext size", ciphertext.bit_length())
+    
+    # print("Ciphertext size", ciphertext.bit_length())
+    
     plaintext_out = decrypt(keys, ciphertext)
     print(f"In: {plaintext_in},\nCiphertext: {ciphertext},\nDecode: {plaintext_out}")
 
-    print(f"n bits: {keys.public.n.bit_length()}")
-    print(f"n^2 bits: {keys.public.n_square.bit_length()}")
-    print(f"n^2 * (2^4096 - 1) bits {(keys.public.n_square * (2**4096 - 1)).bit_length()}")
+    # print(f"n bits: {keys.public.n.bit_length()}")
+    # print(f"n^2 bits: {keys.public.n_square.bit_length()}")
+    # print(f"n^2 * (2^4096 - 1) bits {(keys.public.n_square * (2**4096 - 1)).bit_length()}")
 
     # for example: 
     # python paillier.py "Hello Paillier"
