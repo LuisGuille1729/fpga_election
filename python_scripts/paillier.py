@@ -107,6 +107,7 @@ if __name__ == "__main__":
 
     plaintext_in = 12345
     ciphertext = encrypt(keys.public, plaintext_in)
+    print("Ciphertext size", ciphertext.bit_length())
     plaintext_out = decrypt(keys, ciphertext)
     print(f"In: {plaintext_in},\nCiphertext: {ciphertext},\nDecode: {plaintext_out}")
 

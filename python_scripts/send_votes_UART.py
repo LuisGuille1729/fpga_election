@@ -5,7 +5,7 @@ import random
 
 SERIAL_PORTNAME = "/dev/ttyUSB1"
 # SERIAL_PORTNAME = "/dev/cu.usbserial-8874292301971"
-BAUD = 4800
+BAUD = 9600
 
 ser = serial.Serial(SERIAL_PORTNAME, BAUD)
 
@@ -15,8 +15,9 @@ def int_to_bytes(x: int) -> bytes:
 def int_from_bytes(xbytes: bytes) -> int:
     return int.from_bytes(xbytes, 'little')
 
-def send_vote(candidate):
-    print(f"Voting for candidate {candidate}")
+def send_vote(candidate, verbose=False):
+    if verbose:
+        print(f"Voting for candidate {candidate}")
     assert candidate in [0, 1], f"Candidate should be 0 or 1"
     
     message = candidate*(2**8 - 1)
@@ -41,9 +42,11 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         
         if sys.argv[1] == 'interactive':
+            i = 0
             while True:
-                vote = input("Your vote [0,1]: ")
-                send_vote(int(vote))
+                vote = input(f"({i}) Your vote [0,1]: ")
+                send_vote(int(vote), verbose=False)
+                i += 1
         else:
             send_vote(int(sys.argv[1]))
             # send_byte(sys.argv[1])
@@ -62,8 +65,12 @@ if __name__ == '__main__':
         random.shuffle(all_votes)
         print(all_votes)
         
+        i = 0
         for vote in all_votes:
+            time.sleep(0.1)
+            print(f"({i}) Voting for candidate {vote}")
             send_vote(vote)
+            i += 1
         
         
             
