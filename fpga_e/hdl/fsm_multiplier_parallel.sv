@@ -313,7 +313,7 @@ module fsm_multiplier_parallel  #(
                     computing_done_pipe3 <= computing_done_pipe2;
                     computing_done_pipe4 <= computing_done_pipe3;
                     if (computing_done)
-                        // accumulator_bram_B_read_addr <= 0;
+                        accumulator_bram_B_read_addr <= 0;
                         block_loaded <= 1'b1;
 
                     if (final_out) begin

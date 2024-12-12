@@ -83,7 +83,7 @@ module top_level
 
   uart_receive #(
     .INPUT_CLOCK_FREQ(100_000_000), // may change
-    .BAUD_RATE(4800)
+    .BAUD_RATE(38400)
   ) laptop_encryptor_uart
   (
     .clk_in(clk_100mhz),
@@ -356,7 +356,7 @@ spi_con #(
   logic trigger_uart_send;
   logic[7:0] byte_to_send;
 
-  uart_transmit #(.BAUD_RATE(9600)) 
+  uart_transmit #(.BAUD_RATE(38400)) 
   fpga_to_pc_uart  (
     .clk_in(clk_100mhz),
     .rst_in(sys_rst),
